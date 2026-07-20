@@ -2,21 +2,37 @@
 set -e
 
 echo "========================================"
-echo "  IQAir Workbench - 生产环境更新脚本"
+echo "  IQAir Workbench - 更新脚本"
 echo "========================================"
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$SCRIPT_DIR"
 
-if [ ! -f .env ]; then
-    echo "[错误] 未找到 .env 文件！请先运行 deploy.sh 进行首次部署。"
-    exit 1
-fi
-
 echo "[1/5] 拉取最新代码..."
 git fetch origin
 CURRENT_BRANCH=$(git rev-parse --abbrev-ref HEAD)
 git pull origin "$CURRENT_BRANCH"
+
+if [ ! -f .env ]; then
+    echo "[提示] 未找到 .env 文件，跳过 Docker 部署。"
+    echo "[提示] 若要部署到生产环境，请先配置 .env 文件或运行 deploy.sh。"
+    echo ""
+    echo "========================================"
+    echo "  代码更新完成！"
+    echo "========================================"
+    echo ""
+    exit 0
+fi
+
+if ! command -v docker &> /dev/null; then
+    echo "[提示] 未检测到 Docker，跳过容器部署。"
+    echo ""
+    echo "========================================"
+    echo "  代码更新完成！"
+    echo "========================================"
+    echo ""
+    exit 0
+fi
 
 echo "[2/5] 重新构建并重启服务..."
 docker compose -f docker-compose.prod.yml --env-file .env up -d --build
