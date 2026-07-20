@@ -41,8 +41,8 @@ fi
 
 echo "[1/6] 备份数据库..."
 BACKUP_FILE="$BACKUP_DIR/backup_$(date +%Y%m%d_%H%M%S).sql"
-if docker compose -f docker-compose.prod.yml ps mysql | grep -q "Up"; then
-    docker compose -f docker-compose.prod.yml exec mysql mysqldump -u iqair -pIqAir@2026Riven! iqair_workbench > "$BACKUP_FILE" 2>/dev/null
+if docker compose ps mysql | grep -q "Up"; then
+    docker compose exec mysql mysqldump -u iqair -pIqAir@2026Riven! iqair_workbench > "$BACKUP_FILE" 2>/dev/null
     if [ -f "$BACKUP_FILE" ] && [ -s "$BACKUP_FILE" ]; then
         echo "      ✓ 数据库备份成功: $BACKUP_FILE"
     else
@@ -64,7 +64,7 @@ CURRENT_BRANCH=$(git rev-parse --abbrev-ref HEAD)
 git pull origin "$CURRENT_BRANCH"
 
 echo "[3/6] 重新构建并重启服务..."
-docker compose -f docker-compose.prod.yml --env-file .env up -d --build
+docker compose --env-file .env up -d --build
 
 echo "[4/6] 清理旧的 Docker 镜像..."
 docker image prune -f
@@ -73,13 +73,13 @@ echo "[5/6] 等待服务启动..."
 sleep 10
 
 echo "[6/6] 检查服务状态..."
-docker compose -f docker-compose.prod.yml ps
+docker compose ps
 
 echo ""
 echo "========================================"
 echo "  更新完成！"
 echo "========================================"
 echo ""
-echo "查看日志: docker compose -f docker-compose.prod.yml logs -f"
+echo "查看日志: docker compose logs -f"
 echo "备份目录: $BACKUP_DIR"
 echo ""
