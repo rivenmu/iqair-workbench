@@ -4,29 +4,99 @@
 
 ## 技术栈
 
-- **前端**: Vue 3 + Vite + TypeScript + Pinia + Element Plus + ECharts
-- **后端**: Django 5 + DRF + Celery + Channels + SimpleUI
-- **数据库**: MySQL 8.0 + Redis 7
-- **部署**: Docker Compose + Volume 挂载（支持 Remote-SSH 热更新）
+| 层级 | 技术 |
+|------|------|
+| **前端** | Vue 3 + Vite + TypeScript + Pinia + Element Plus + ECharts |
+| **后端** | Django 5 + DRF + Celery + Channels + SimpleUI |
+| **服务** | Gunicorn (WSGI) + WhiteNoise (静态文件) |
+| **数据库** | MySQL 8.0 + Redis 7 |
+| **部署** | Docker Compose + Nginx 反向代理 |
+
+## 项目结构
+
+```
+iqair-workbench/
+├── docker-compose.yml          # Docker 编排（统一开发/生产配置）
+├── deploy.sh                   # 生产环境首次部署脚本
+├── update.sh                   # 日常更新脚本（备份+拉代码+重建）
+├── .env.example                # 开发环境变量模板
+├── .env.prod.example           # 生产环境变量模板
+├── AGENTS.md                   # AI Agent 开发规范
+│
+├── backend/                    # Django 后端
+│   ├── Dockerfile              # 后端镜像（Python 3.11 + Gunicorn）
+│   ├── requirements.txt        # Python 依赖
+│   ├── manage.py
+│   ├── config/                 # Django 配置、URL、Celery、ASGI/WSGI
+│   ├── apps/                   # Django 应用模块
+│   │   ├── accounts/           # 用户认证与权限
+│   │   ├── projects/           # 项目管理
+│   │   ├── dashboard/          # 数据看板（含 UI 文本配置）
+│   │   ├── snapshots/          # 数据快照
+│   │   ├── audit/              # 操作审计日志
+│   │   └── navigation/         # 网址导航
+│   ├── services/               # 业务逻辑层
+│   ├── tasks/                  # Celery 异步任务
+│   └── utils/                  # 工具函数
+│
+├── frontend/                   # Vue 3 前端
+│   ├── Dockerfile              # 多阶段构建（dev / build / prod）
+│   ├── nginx.conf              # 前端 Nginx 配置（生产环境）
+│   ├── package.json
+│   ├── vite.config.ts
+│   └── src/
+│       ├── main.ts             # 入口
+│       ├── App.vue
+│       ├── api/                # API 客户端（auth, dashboard, navigation, projects）
+│       ├── components/         # 通用组件
+│       ├── layouts/            # 布局组件（MainLayout, WorkbenchLayout）
+│       ├── router/             # Vue Router 路由
+│       ├── stores/             # Pinia 状态管理
+│       ├── styles/             # SCSS 样式（tokens, global, element-overrides）
+│       └── views/
+│           ├── Navigation.vue      # 网址导航首页
+│           ├── Login.vue           # 登录页
+│           ├── Register.vue        # 注册页
+│           ├── Profile.vue         # 个人设置
+│           ├── UserManagement.vue  # 用户管理
+│           └── dashboard/          # 数据看板面板
+│               ├── IQAirDashboard.vue    # 主看板
+│               ├── IQAirDataPanel.vue    # 数据面板
+│               ├── IQAirCompetitor.vue   # 竞品对比
+│               ├── AirQualityPanel.vue   # 空气质量
+│               ├── GenericPanel.vue      # 通用面板
+│               ├── DailyPanel.vue        # 日报
+│               ├── WeeklyPanel.vue       # 周报
+│               ├── SalesPanel.vue        # 销售数据
+│               └── CiYunPanel.vue        # 词云
+│
+├── nginx/                      # 宿主机 Nginx 配置
+│   └── iqair.conf              # 域名反向代理（含 /bi/ DataEase 代理）
+│
+├── data/                       # 数据持久化（不提交 Git）
+│   ├── mysql/                  # MySQL 数据
+│   ├── redis/                  # Redis 数据
+│   ├── snapshots/              # 快照文件
+│   └── logs/                   # 日志
+│
+├── uploadfiles/                # 上传文件（不提交 Git）
+└── backups/                    # 数据库备份（update.sh 自动生成）
+```
 
 ## 快速开始
 
-### 一、服务器环境准备（PVE Ubuntu）
+### 一、环境准备
 
-#### 1. 安装 Docker 和 Docker Compose
+#### 1. 安装 Docker
 
 ```bash
 # 更新包索引
 sudo apt update
-
-# 安装必要依赖
 sudo apt install -y ca-certificates curl gnupg lsb-release
 
-# 添加 Docker 官方 GPG 密钥
+# 添加 Docker 官方 GPG 密钥和仓库
 sudo mkdir -p /etc/apt/keyrings
 curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg
-
-# 添加 Docker 仓库
 echo \
   "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu \
   $(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
@@ -37,48 +107,34 @@ sudo apt install -y docker-ce docker-ce-cli containerd.io docker-compose-plugin
 
 # 将当前用户加入 docker 组（免 sudo）
 sudo usermod -aG docker $USER
-
-# 重新登录使组权限生效
-exit
-# 重新 SSH 登录
-
-# 验证安装
-docker --version
-docker compose version
+# 退出重新登录生效
 ```
 
-#### 2. 安装 Nginx（用于域名反向代理）
+#### 2. 安装 Nginx（域名反向代理，可选）
 
 ```bash
 sudo apt install -y nginx
 ```
 
-### 二、部署项目
+### 二、部署
 
-#### 1. 上传项目代码
-
-将整个 `iqair-workbench` 目录上传到服务器，例如放到 `/opt/iqair-workbench`：
+#### 1. 拉取项目代码
 
 ```bash
-# 在服务器创建目录
-mkdir -p /opt/iqair-workbench
-
-# 通过 Trae Remote-SSH 直接在服务器上编辑
-# 或使用 scp 上传
-scp -r ./v2/iqair-workbench/* user@10.0.0.6:/opt/iqair-workbench/
+git clone <repo-url> /opt/iqair-workbench
+cd /opt/iqair-workbench
 ```
 
 #### 2. 配置环境变量
 
 ```bash
-cd /opt/iqair-workbench
-
-# 复制环境变量模板
+# 开发环境
 cp .env.example .env
-
-# 编辑环境变量（修改密码等敏感信息）
-nano .env
+# 生产环境
+cp .env.prod.example .env
 ```
+
+编辑 `.env`，修改数据库密码、SECRET_KEY 等敏感信息。
 
 #### 3. 启动服务
 
@@ -93,14 +149,9 @@ docker compose ps
 docker compose logs -f
 ```
 
-#### 4. 初始化数据库
+启动后会自动执行数据库迁移、创建管理员账户、收集静态文件。
 
-首次启动会自动执行：
-- Django migrations
-- 创建管理员账户 (admin/admin123)
-- 创建默认项目数据
-
-#### 5. 配置 Nginx 域名代理
+#### 4. 配置域名访问（可选）
 
 ```bash
 # 复制 Nginx 配置
@@ -109,128 +160,158 @@ sudo cp /opt/iqair-workbench/nginx/iqair.conf /etc/nginx/sites-available/
 # 启用站点
 sudo ln -s /etc/nginx/sites-available/iqair.conf /etc/nginx/sites-enabled/
 
-# 测试配置
-sudo nginx -t
-
-# 重载 Nginx
-sudo systemctl reload nginx
+# 测试并重载
+sudo nginx -t && sudo systemctl reload nginx
 ```
 
 ### 三、访问地址
 
 | 地址 | 说明 |
 |------|------|
-| http://10.0.0.6:8888 | RIVEN 网址导航首页 |
-| http://10.0.0.6:8888/index.html | 同上（显式 index.html） |
-| http://10.0.0.6:8000/admin/ | Django 管理后台（SimpleUI 中文界面） |
+| http://10.0.0.6:8888 | 网址导航首页 |
 | http://10.0.0.6:8000/api/ | 后端 API |
-| http://iqair.rivenmu.cn:20001 | 域名访问（需配置 Nginx 和 DNS） |
+| http://10.0.0.6:8000/admin/ | Django 管理后台（SimpleUI） |
+| http://iqair.rivenmu.cn:20001 | 域名访问（需 Nginx + DNS） |
 
 ### 四、默认账户
 
 - **用户名**: admin
 - **密码**: admin123
 
-> 首次登录后请立即在「个人设置」中修改密码
+> 首次登录后请在「个人设置」中修改密码。
 
-## 开发模式（Remote-SSH 热更新）
+## 日常运维
 
-### 工作流程
+### 更新代码
 
-1. **使用 Trae Remote-SSH 连接到服务器**
-
-2. **修改代码后自动生效**：
-   - 前端 Vue 代码：Vite HMR 自动热更新，无需重启
-   - 后端 Django 代码：Daphne 自动检测文件变化并重载
-   - 数据模型变更：需要手动执行 migrations
-
-3. **需要重启服务的场景**：
-   ```bash
-   # 修改了 requirements.txt（新增 Python 依赖）
-   docker compose restart backend celery-worker celery-beat
-
-   # 修改了 package.json（新增 npm 依赖）
-   docker compose restart frontend
-
-   # 修改了 docker-compose.yml
-   docker compose up -d
-
-   # 数据模型变更
-   docker compose exec backend python manage.py makemigrations
-   docker compose exec backend python manage.py migrate
-   ```
-
-### 目录说明
-
+```bash
+./update.sh
 ```
-/opt/iqair-workbench/
-├── docker-compose.yml      # Docker 编排
-├── .env                    # 环境变量
-├── backend/                # 后端代码（挂载到容器，保存即生效）
-├── frontend/               # 前端代码（挂载到容器，HMR 热更新）
-├── data/                   # 数据持久化
-│   ├── mysql/              # MySQL 数据
-│   ├── redis/              # Redis 数据
-│   ├── snapshots/          # 快照文件
-│   └── logs/               # 日志
-└── nginx/                  # Nginx 配置
+
+该脚本会自动：
+1. 备份数据库到 `backups/` 目录
+2. 拉取最新代码（Git pull）
+3. 重新构建并重启 Docker 服务
+4. 清理旧镜像
+5. 检查服务状态
+
+### 常用命令
+
+```bash
+# 查看各服务日志
+docker compose logs -f backend
+docker compose logs -f frontend
+docker compose logs -f celery-worker
+docker compose logs -f mysql
+
+# 进入容器
+docker compose exec backend bash
+docker compose exec frontend sh
+
+# 执行 Django 命令
+docker compose exec backend python manage.py migrate
+docker compose exec backend python manage.py check
+
+# 重启服务
+docker compose restart backend
+docker compose restart frontend
+
+# 停止所有服务
+docker compose down
+```
+
+### 数据备份
+
+```bash
+# MySQL 备份
+docker compose exec mysql mysqldump -u root -p iqair_workbench > backup.sql
+
+# 快照文件备份
+tar -czf snapshots_backup.tar.gz data/snapshots/
 ```
 
 ## 功能特性
 
 ### 核心功能
-- ✅ RIVEN 网址导航页（左右分栏布局，5大功能区块）
-- ✅ 苹果简约风格 UI 设计（毛玻璃/卡片/微动画）
-- ✅ JWT 认证 + 自动刷新 Token
-- ✅ 用户权限管理（管理员/普通用户）
-- ✅ 网址收藏功能（红心收藏，未登录跳转登录页）
-- ✅ 管理员网址管理（添加/删除/编辑/图标上传）
-- ✅ Django SimpleUI 管理后台（中文界面）
-- ✅ IQAir 数据看板（双模态编辑 + ECharts 图表）
-- ✅ 数据快照系统（混合存储：MySQL + 文件系统）
-- ✅ 操作审计日志（90天保留，7天后每天保留最后一条）
-- ✅ 撤销功能（多级撤销）
-- ✅ Celery 异步任务（快照清理、日志清理）
+- 网址导航页（左右分栏布局，5 大功能区块）
+- 苹果简约风格 UI（毛玻璃 / 卡片 / 微动画）
+- JWT 认证 + 自动刷新 Token + Token 黑名单
+- 用户权限管理（管理员 / 普通用户）
+- 网址收藏功能（红心收藏，未登录跳转登录页）
+- 管理员网址管理（添加 / 删除 / 编辑 / 图标上传）
+- Django SimpleUI 管理后台（中文界面）
+- IQAir 数据看板（多面板 + ECharts 图表）
+- 词云页面（echarts-wordcloud）
+- 数据快照系统（MySQL + 文件系统混合存储）
+- 操作审计日志（90 天保留，7 天后按天合并）
+- 撤销功能（多级撤销）
+- Celery 异步任务（快照清理、日志清理）
+- DataEase BI 看板集成（/bi/ 反向代理）
 
 ### 导航分类
 1. 我的收藏（动态生成，需登录）
 2. 工作站点（IQAir 数据看板等）
 3. 个人站点
 4. 实用工具
-5. AI工具
+5. AI 工具
 
-## 常见问题
+## 开发说明
 
-### Q: 如何查看容器日志？
+### 后端
+
+- **框架**: Django 5 + Django REST Framework
+- **认证**: JWT（SimpleJWT）+ Token 黑名单
+- **异步**: Celery（Redis Broker）+ Celery Beat 定时任务
+- **WebSocket**: Django Channels + Redis Channel Layer
+- **静态文件**: WhiteNoise（压缩 + 缓存）
+- **API 文档**: drf-spectacular（OpenAPI Schema）
+- **后台管理**: SimpleUI 主题
+- **数据库**: MySQL 8.0（utf8mb4）
+
+### 前端
+
+- **框架**: Vue 3（Composition API）+ TypeScript
+- **构建**: Vite
+- **UI 库**: Element Plus
+- **图表**: ECharts + vue-echarts + echarts-wordcloud
+- **状态管理**: Pinia
+- **路由**: Vue Router
+- **HTTP**: Axios（统一拦截器、自动刷新 Token）
+- **进度条**: NProgress
+- **样式**: SCSS（设计令牌系统 + Element Plus 覆写）
+- **字体**: Alibaba PuHuiTi（中文）+ Inter（英文）
+
+### Docker 多阶段构建
+
+前端 Dockerfile 支持三阶段构建：
+
 ```bash
-docker compose logs -f backend    # 后端日志
-docker compose logs -f frontend   # 前端日志
-docker compose logs -f mysql      # 数据库日志
+# 开发模式（Vite HMR 热更新）
+docker compose up -d --build
+
+# 生产模式（Nginx 静态文件）
+# Dockerfile 中 target: prod 阶段
 ```
 
-### Q: 如何进入容器执行命令？
-```bash
-docker compose exec backend bash
-docker compose exec frontend sh
-```
+后端使用 Gunicorn (WSGI) + WhiteNoise 提供静态文件服务。
 
-### Q: 如何备份数据？
-```bash
-# 备份 MySQL
-docker compose exec mysql mysqldump -u root -p iqair_workbench > backup.sql
+### 环境变量说明
 
-# 备份快照文件
-tar -czf snapshots_backup.tar.gz data/snapshots/
-```
-
-### Q: 如何更新代码？
-```bash
-# 通过 Trae Remote-SSH 直接修改服务器上的文件
-# 修改后前端自动热更新，后端自动重载
-# 如需手动重启：
-docker compose restart backend
-```
+| 变量 | 说明 | 默认值 |
+|------|------|--------|
+| `MYSQL_ROOT_PASSWORD` | MySQL root 密码 | - |
+| `MYSQL_DATABASE` | 数据库名 | `iqair_workbench` |
+| `MYSQL_USER` | 数据库用户 | `iqair` |
+| `MYSQL_PASSWORD` | 数据库密码 | - |
+| `REDIS_PASSWORD` | Redis 密码 | - |
+| `DJANGO_SECRET_KEY` | Django 密钥 | - |
+| `DEBUG` | 调试模式 | `False` |
+| `ALLOWED_HOSTS` | 允许的主机 | `*` |
+| `CSRF_TRUSTED_ORIGINS` | CSRF 信任源 | `http://localhost:8888` |
+| `VITE_API_BASE_URL` | 前端 API 地址 | - |
+| `VITE_APP_TITLE` | 应用标题 | `IQAir 数据分析工作台` |
+| `CELERY_WORKERS` | Celery 并发数 | `2` |
 
 ## 许可证
 
-私有项目，版权所有 © 2026 Riven
+私有项目，版权所有 &copy; 2026 Riven
