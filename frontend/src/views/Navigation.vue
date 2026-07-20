@@ -103,7 +103,7 @@
                 @click="handleCardClick(link)"
               >
                 <div class="card-icon-area">
-                  <img v-if="link.icon_image" :src="link.icon_image" :alt="link.name" class="card-icon-img" />
+                  <img v-if="link.icon_image" :src="link.icon_image" :alt="link.name" class="card-icon-img" @error="handleIconError(link)" />
                   <span v-else-if="link.icon_emoji" class="card-icon-emoji">{{ link.icon_emoji }}</span>
                   <div v-else class="card-icon-default">
                     <el-icon size="24" color="#86868B"><Link /></el-icon>
@@ -504,13 +504,30 @@ async function handleFetchIcon(link: any) {
     ElMessage.info(`正在抓取 ${link.name} 的图标...`)
     const res = await navigationApi.fetchIcon(link.id)
     if (res.success && res.link?.icon_image) {
-      link.icon_image = res.link.icon_image
+      link.icon_image = res.link.icon_image + '?t=' + Date.now()
       ElMessage.success('图标抓取成功')
     } else {
       ElMessage.warning(res.message || '未找到图标')
     }
   } catch {
     ElMessage.error('图标抓取失败')
+  }
+}
+
+async function handleIconError(link: any) {
+  if (link._iconErrorHandling) return
+  link._iconErrorHandling = true
+  try {
+    const res = await navigationApi.fetchIcon(link.id)
+    if (res.success && res.link?.icon_image) {
+      link.icon_image = res.link.icon_image + '?t=' + Date.now()
+    } else {
+      link.icon_image = ''
+    }
+  } catch {
+    link.icon_image = ''
+  } finally {
+    link._iconErrorHandling = false
   }
 }
 

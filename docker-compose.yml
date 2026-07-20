@@ -2,6 +2,7 @@ services:
   backend:
     volumes:
       - ./backend:/app/backend
+      - ./data/media:/app/backend/media
     command: >
       sh -c "mkdir -p /app/logs &&
              python manage.py migrate &&

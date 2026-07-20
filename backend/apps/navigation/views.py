@@ -1,5 +1,6 @@
 import logging
 import mimetypes
+import os
 import ssl
 from urllib.parse import urlparse
 from urllib.request import Request, urlopen
@@ -140,10 +141,14 @@ class WebsiteLinkViewSet(AuditLogMixin, viewsets.ModelViewSet):
         if link.is_internal:
             return Response({'success': False, 'message': '内部链接无法抓取图标'}, status=400)
 
-        # 如果已有手动上传的图标，不覆盖
+        # 如果数据库中有图标引用但文件实际不存在（容器重建导致），清除引用允许重新抓取
         if link.icon_image:
-            serializer = WebsiteLinkListSerializer(link, context=self.get_serializer_context())
-            return Response({'success': True, 'message': '图标已存在', 'link': serializer.data})
+            if os.path.exists(link.icon_image.path):
+                serializer = WebsiteLinkListSerializer(link, context=self.get_serializer_context())
+                return Response({'success': True, 'message': '图标已存在', 'link': serializer.data})
+            else:
+                logger.warning(f'图标文件丢失，将重新抓取: {link.name}')
+                link.icon_image.delete(save=False)
 
         # 解析域名
         parsed = urlparse(link.url)
@@ -183,24 +188,30 @@ class WebsiteLinkViewSet(AuditLogMixin, viewsets.ModelViewSet):
             return Response({'detail': '无图标'}, status=404)
 
         try:
-            # 获取文件的完整路径
             file_path = link.icon_image.path
-            # 推断 MIME 类型
+            if not os.path.exists(file_path):
+                logger.warning(f'图标文件不存在: {file_path}')
+                return Response({'detail': '图标文件不存在'}, status=404)
+
             content_type, _ = mimetypes.guess_type(file_path)
             if not content_type:
                 content_type = 'application/octet-stream'
 
-            # 返回文件响应
             response = FileResponse(
                 open(file_path, 'rb'),
                 content_type=content_type
             )
-            # 设置缓存头（图标不常变化，缓存 1 天）
             response['Cache-Control'] = 'public, max-age=86400'
             return response
+        except FileNotFoundError:
+            logger.warning(f'图标文件未找到: {link.icon_image.path}')
+            return Response({'detail': '图标文件不存在'}, status=404)
+        except IOError as e:
+            logger.error(f'图标文件读取失败: {e}')
+            return Response({'detail': '图标文件读取失败'}, status=500)
         except Exception as e:
             logger.error(f'提供图标失败: {e}')
-            return Response({'detail': '图标文件读取失败'}, status=500)
+            return Response({'detail': '服务器内部错误'}, status=500)
 
     def _fetch_favicon(self, domain, original_url):
         """尝试多种方式抓取favicon，返回(bytes, content_type)"""
