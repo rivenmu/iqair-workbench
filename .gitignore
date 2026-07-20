@@ -1,0 +1,67 @@
+# ========== 环境变量与敏感配置 ==========
+.env
+.env.local
+.env.*.local
+
+# ========== Python / Django ==========
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+db.sqlite3
+*.log
+staticfiles/
+media/
+.pytest_cache/
+.coverage
+htmlcov/
+
+# ========== Node.js / Frontend ==========
+node_modules/
+dist/
+.vite/
+*.local
+.npm
+.cache/
+
+# ========== IDE / Editors ==========
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# ========== OS Files ==========
+.DS_Store
+Thumbs.db
+
+# ========== Docker ==========
+docker-compose.override.yml
+
+# ========== 数据目录（不提交数据，只保留目录结构） ==========
+data/mysql/*
+!data/mysql/.gitkeep
+data/redis/*
+!data/redis/.gitkeep
+data/snapshots/*
+!data/snapshots/.gitkeep
+data/logs/mysql/*
+!data/logs/mysql/.gitkeep
+data/logs/backend/*
+!data/logs/backend/.gitkeep
+data/*.sql
+data/*.dump
+
+# ========== 上传文件 ==========
+uploadfiles/*
+!uploadfiles/.gitkeep
+
+# ========== 第三方安装包 ==========
+dataease-online-installer-*.tar.gz
+dataease-online-installer-*/
+
+# ========== 项目相关 ==========
+.trae/
+docs/
+agent.md
