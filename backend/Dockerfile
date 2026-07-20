@@ -20,9 +20,8 @@ WORKDIR /app/backend
 COPY requirements.txt /app/backend/
 RUN pip install --no-cache-dir -r requirements.txt
 
-# 代码通过 Volume 挂载，不需要 COPY
-# 开发模式：Daphne + Django runserver 支持 --reload
+COPY . /app/backend/
 
 EXPOSE 8000
 
-CMD ["sh", "-c", "python manage.py migrate && python manage.py init_admin && daphne -b 0.0.0.0 -p 8000 config.asgi:application"]
+CMD ["sh", "-c", "python manage.py migrate && python manage.py init_admin && python manage.py collectstatic --noinput && gunicorn config.wsgi:application --bind 0.0.0.0:8000 --workers 4 --timeout 120"]

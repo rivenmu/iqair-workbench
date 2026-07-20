@@ -1,10 +1,9 @@
-import axios from 'axios'
-import type { AxiosInstance, InternalAxiosRequestConfig, AxiosResponse } from 'axios'
+import axios, { type AxiosInstance, type InternalAxiosRequestConfig } from 'axios'
 import { ElMessage } from 'element-plus'
 import { useUserStore } from '@/stores/user'
 import router from '@/router'
 
-const request: AxiosInstance = axios.create({
+const axiosInstance: AxiosInstance = axios.create({
   baseURL: '/api',
   timeout: 30000,
   headers: {
@@ -12,8 +11,7 @@ const request: AxiosInstance = axios.create({
   }
 })
 
-// 请求拦截器
-request.interceptors.request.use(
+axiosInstance.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
     const userStore = useUserStore()
     if (userStore.token) {
@@ -24,9 +22,8 @@ request.interceptors.request.use(
   (error) => Promise.reject(error)
 )
 
-// 响应拦截器
-request.interceptors.response.use(
-  (response: AxiosResponse) => {
+axiosInstance.interceptors.response.use(
+  (response) => {
     return response.data
   },
   async (error) => {
@@ -35,7 +32,6 @@ request.interceptors.response.use(
     if (response) {
       switch (response.status) {
         case 401: {
-          // token 过期，尝试刷新
           const userStore = useUserStore()
           if (userStore.refreshToken && !error.config._retry) {
             error.config._retry = true
@@ -45,7 +41,7 @@ request.interceptors.response.use(
               })
               userStore.token = res.data.access
               error.config.headers.Authorization = `Bearer ${res.data.access}`
-              return request(error.config)
+              return axiosInstance(error.config)
             } catch {
               userStore.logout()
               router.push('/login')
@@ -76,5 +72,15 @@ request.interceptors.response.use(
     return Promise.reject(error)
   }
 )
+
+interface RequestInstance {
+  get<T = any>(url: string, config?: any): Promise<T>
+  post<T = any>(url: string, data?: any, config?: any): Promise<T>
+  put<T = any>(url: string, data?: any, config?: any): Promise<T>
+  patch<T = any>(url: string, data?: any, config?: any): Promise<T>
+  delete<T = any>(url: string, config?: any): Promise<T>
+}
+
+const request = axiosInstance as unknown as RequestInstance
 
 export default request

@@ -113,25 +113,25 @@
           </div>
 
           <!-- 汇总卡片 -->
-          <div class="summary-cards" v-if="tmallData?.summary && Object.keys(tmallData.summary).length">
+          <div class="summary-cards" v-if="tmallSummary">
             <div class="summary-card">
               <div class="summary-label">总销售额</div>
-              <div class="summary-value">¥ {{ formatNum((tmallData.summary as PlatformSummary).total_sales) }}</div>
-              <div class="summary-yoy" :class="(tmallData.summary as PlatformSummary).yoy_growth >= 0 ? 'pos' : 'neg'" v-if="(tmallData.summary as PlatformSummary).yoy_growth !== null">
-                同比 {{ (tmallData.summary as PlatformSummary).yoy_growth >= 0 ? '+' : '' }}{{ (tmallData.summary as PlatformSummary).yoy_growth }}%
+              <div class="summary-value">¥ {{ formatNum(tmallSummary.total_sales) }}</div>
+              <div class="summary-yoy" :class="tmallSummary.yoy_growth >= 0 ? 'pos' : 'neg'" v-if="tmallSummary.yoy_growth !== null">
+                同比 {{ tmallSummary.yoy_growth >= 0 ? '+' : '' }}{{ tmallSummary.yoy_growth }}%
               </div>
             </div>
             <div class="summary-card">
               <div class="summary-label">总订单</div>
-              <div class="summary-value">{{ formatNum((tmallData.summary as PlatformSummary).total_orders) }}</div>
+              <div class="summary-value">{{ formatNum(tmallSummary.total_orders) }}</div>
             </div>
             <div class="summary-card">
               <div class="summary-label">总访客</div>
-              <div class="summary-value">{{ formatNum((tmallData.summary as PlatformSummary).total_visitors) }}</div>
+              <div class="summary-value">{{ formatNum(tmallSummary.total_visitors) }}</div>
             </div>
             <div class="summary-card">
               <div class="summary-label">平均转化率</div>
-              <div class="summary-value">{{ (tmallData.summary as PlatformSummary).avg_conversion }}%</div>
+              <div class="summary-value">{{ tmallSummary.avg_conversion }}%</div>
             </div>
           </div>
 
@@ -205,25 +205,25 @@
           </div>
 
           <!-- 汇总卡片 -->
-          <div class="summary-cards" v-if="jdData?.summary && Object.keys(jdData.summary).length">
+          <div class="summary-cards" v-if="jdSummary">
             <div class="summary-card">
               <div class="summary-label">总销售额</div>
-              <div class="summary-value">¥ {{ formatNum((jdData.summary as PlatformSummary).total_sales) }}</div>
-              <div class="summary-yoy" :class="(jdData.summary as PlatformSummary).yoy_growth >= 0 ? 'pos' : 'neg'" v-if="(jdData.summary as PlatformSummary).yoy_growth !== null">
-                同比 {{ (jdData.summary as PlatformSummary).yoy_growth >= 0 ? '+' : '' }}{{ (jdData.summary as PlatformSummary).yoy_growth }}%
+              <div class="summary-value">¥ {{ formatNum(jdSummary.total_sales) }}</div>
+              <div class="summary-yoy" :class="jdSummary.yoy_growth >= 0 ? 'pos' : 'neg'" v-if="jdSummary.yoy_growth !== null">
+                同比 {{ jdSummary.yoy_growth >= 0 ? '+' : '' }}{{ jdSummary.yoy_growth }}%
               </div>
             </div>
             <div class="summary-card">
               <div class="summary-label">总订单</div>
-              <div class="summary-value">{{ formatNum((jdData.summary as PlatformSummary).total_orders) }}</div>
+              <div class="summary-value">{{ formatNum(jdSummary.total_orders) }}</div>
             </div>
             <div class="summary-card">
               <div class="summary-label">总访客</div>
-              <div class="summary-value">{{ formatNum((jdData.summary as PlatformSummary).total_visitors) }}</div>
+              <div class="summary-value">{{ formatNum(jdSummary.total_visitors) }}</div>
             </div>
             <div class="summary-card">
               <div class="summary-label">平均转化率</div>
-              <div class="summary-value">{{ (jdData.summary as PlatformSummary).avg_conversion }}%</div>
+              <div class="summary-value">{{ jdSummary.avg_conversion }}%</div>
             </div>
           </div>
 
@@ -323,6 +323,20 @@ const sortState = reactive<Record<PlatformKey, { prop: string; order: string }>>
 const hasData = computed(() =>
   !!(tmallData.value?.records?.length || jdData.value?.records?.length)
 )
+
+const tmallSummary = computed(() => {
+  if (!tmallData.value?.summary || !Object.keys(tmallData.value.summary).length) {
+    return null
+  }
+  return tmallData.value.summary as PlatformSummary
+})
+
+const jdSummary = computed(() => {
+  if (!jdData.value?.summary || !Object.keys(jdData.value.summary).length) {
+    return null
+  }
+  return jdData.value.summary as PlatformSummary
+})
 
 const overviewStats = computed(() => {
   const stats: { platform: string; color: string; totalSales: number; yoyGrowth: number | null }[] = []
