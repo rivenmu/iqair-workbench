@@ -133,7 +133,9 @@ services:
       - iqair-network
 
   frontend:
-    build: ./frontend
+    build:
+      context: ./frontend
+      target: dev
     container_name: iqair-frontend
     restart: unless-stopped
     depends_on:

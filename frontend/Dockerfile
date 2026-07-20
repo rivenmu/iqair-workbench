@@ -7,6 +7,8 @@ RUN npm install
 
 FROM base AS dev
 
+COPY . .
+
 EXPOSE 8888
 
 CMD ["npm", "run", "dev", "--", "--host", "0.0.0.0", "--port", "8888"]
