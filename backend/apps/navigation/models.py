@@ -1,8 +1,8 @@
-from django.db import models
+﻿from django.db import models
 
 
 class LinkCategory(models.TextChoices):
-    """导航链接分类（"我的收藏"为虚拟分类，由 UserFavorite 动态生成）"""
+    """导航链接分类"""
     WORK_SITES = 'work_sites', '工作站点'
     PERSONAL_SITES = 'personal_sites', '个人站点'
     TOOLS = 'tools', '实用工具'
@@ -42,26 +42,3 @@ class WebsiteLink(models.Model):
 
     def __str__(self):
         return self.name
-
-
-class UserFavorite(models.Model):
-    """用户收藏"""
-    user = models.ForeignKey(
-        'accounts.User', on_delete=models.CASCADE,
-        related_name='favorites', verbose_name='用户'
-    )
-    website_link = models.ForeignKey(
-        WebsiteLink, on_delete=models.CASCADE,
-        related_name='favorited_by', verbose_name='网站链接'
-    )
-    created_at = models.DateTimeField(auto_now_add=True, verbose_name='收藏时间')
-
-    class Meta:
-        db_table = 'user_favorites'
-        verbose_name = '用户收藏'
-        verbose_name_plural = verbose_name
-        unique_together = ['user', 'website_link']
-        ordering = ['-created_at']
-
-    def __str__(self):
-        return f'{self.user.username} - {self.website_link.name}'

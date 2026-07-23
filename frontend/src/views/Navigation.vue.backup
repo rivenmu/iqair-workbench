@@ -1,10 +1,10 @@
-﻿<template>
+<template>
   <div class="nav-page">
     <!-- 顶部栏 -->
     <header class="top-bar">
       <div class="top-content">
         <div class="top-left">
-          <RivenLogo clickable @click="scrollToSection(categories[0]?.key)" />
+          <RivenLogo clickable @click="scrollToSection('work_sites')" />
         </div>
         <div class="top-right">
           <template v-if="!userStore.isLoggedIn">
@@ -60,7 +60,7 @@
               <component :is="cat.icon" />
             </el-icon>
             <span class="sidebar-label">{{ cat.label }}</span>
-            <span class="sidebar-count" v-if="sectionData[cat.key]?.length">{{ sectionData[cat.key].length }}</span>
+            <span class="sidebar-count" v-if="sectionData[cat.key]">{{ sectionData[cat.key].length }}</span>
           </button>
         </nav>
       </aside>
@@ -68,32 +68,6 @@
       <!-- 右侧滚动内容区 -->
       <main class="scroll-content" ref="scrollContainer" @scroll="handleScroll">
         <div class="content-wrapper">
-          <!-- 内部项目色块区域 -->
-          <section class="featured-section" v-if="featuredProjects.length">
-            <div class="featured-grid">
-              <div
-                v-for="(project, index) in featuredProjects"
-                :key="project.id"
-                class="featured-card"
-                :class="`featured-card--${project._colorKey}`"
-                :style="{ '--i': index }"
-                @click="handleCardClick(project)"
-              >
-                <div class="featured-card__icon">
-                  <img v-if="project.icon_image" :src="project.icon_image" :alt="project.name" />
-                  <span v-else-if="project.icon_emoji">{{ project.icon_emoji }}</span>
-                  <el-icon v-else size="32" color="rgba(255,255,255,0.9)"><Monitor /></el-icon>
-                </div>
-                <div class="featured-card__body">
-                  <h3 class="featured-card__title">{{ project.name }}</h3>
-                  <p class="featured-card__desc">{{ project.description || '进入项目' }}</p>
-                </div>
-                <el-icon class="featured-card__arrow" size="20"><ArrowRight /></el-icon>
-              </div>
-            </div>
-          </section>
-
-          <!-- 分类区块 -->
           <section
             v-for="cat in categories"
             :key="cat.key"
@@ -102,13 +76,14 @@
             :ref="el => setSectionRef(cat.key, el)"
           >
             <div class="section-header">
-              <h2 class="section-title">
-                <span class="section-title__line"></span>
-                <span class="section-title__text">{{ cat.label }}</span>
-                <span class="section-title__line"></span>
-              </h2>
+              <div class="section-title-area">
+                <el-icon size="22" color="#007AFF">
+                  <component :is="cat.icon" />
+                </el-icon>
+                <h2 class="section-title">{{ cat.label }}</h2>
+              </div>
               <el-button
-                v-if="userStore.isAdmin"
+                v-if="userStore.isAdmin && cat.key !== 'favorites'"
                 type="primary"
                 :icon="Plus"
                 round
@@ -145,24 +120,34 @@
                   <el-icon class="card-arrow"><ArrowRight /></el-icon>
                 </div>
 
-                <!-- 管理员操作按钮 -->
-                <div class="card-admin" v-if="userStore.isAdmin">
-                  <button class="admin-btn" title="编辑" @click.stop="openEditDialog(link)">
-                    <el-icon size="14"><Edit /></el-icon>
-                  </button>
-                  <button class="admin-btn fetch-btn" title="抓取图标" @click.stop="handleFetchIcon(link)">
+                <button
+                  class="heart-btn"
+                  :class="{ favorited: link.is_favorited }"
+                  @click.stop="handleFavorite(link, cat.key)"
+                >
+                  <svg viewBox="0 0 24 24" class="heart-icon" :fill="link.is_favorited ? '#FF3B30' : 'none'" :stroke="link.is_favorited ? '#FF3B30' : '#AEAEB2'" stroke-width="2">
+                    <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
+                  </svg>
+                </button>
+
+                <div v-if="userStore.isAdmin && cat.key !== 'favorites'" class="card-admin">
+                  <button class="admin-btn fetch-btn" @click.stop="handleFetchIcon(link)" title="抓取图标">
                     <el-icon size="14"><Download /></el-icon>
                   </button>
-                  <button class="admin-btn delete-btn" title="删除" @click.stop="handleDelete(link, cat.key)">
+                  <button class="admin-btn edit-btn" @click.stop="openEditDialog(link)">
+                    <el-icon size="14"><Edit /></el-icon>
+                  </button>
+                  <button class="admin-btn delete-btn" @click.stop="handleDelete(link, cat.key)">
                     <el-icon size="14"><Delete /></el-icon>
                   </button>
                 </div>
               </div>
 
-              <!-- 空状态 -->
-              <div v-if="!sectionLoading[cat.key] && !(sectionData[cat.key]?.length)" class="empty-state">
-                <el-icon size="40" color="#AEAEB2"><FolderOpened /></el-icon>
-                <span class="empty-text">暂无链接</span>
+              <div v-if="!sectionLoading[cat.key] && (!sectionData[cat.key] || sectionData[cat.key].length === 0)" class="empty-state">
+                <el-icon size="40" color="#D2D2D7"><FolderOpened /></el-icon>
+                <p class="empty-text">
+                  {{ cat.key === 'favorites' ? '还没有收藏任何链接，点击红心收藏吧' : '暂无链接' }}
+                </p>
               </div>
             </div>
           </section>
@@ -172,55 +157,63 @@
       </main>
     </div>
 
-    <!-- 添加/编辑链接弹窗 -->
+    <!-- 添加/编辑链接对话框 -->
     <el-dialog
       v-model="showDialog"
       :title="editingLink ? '编辑链接' : '添加链接'"
       width="520px"
-      :close-on-click-modal="false"
     >
-      <el-form :model="linkForm" label-width="80px" label-position="left">
-        <el-form-item label="名称" required>
-          <el-input v-model="linkForm.name" placeholder="网站名称" maxlength="100" />
+      <el-form :model="linkForm" label-width="90px">
+        <el-form-item label="名称">
+          <el-input v-model="linkForm.name" placeholder="网站名称" />
         </el-form-item>
-        <el-form-item label="链接" required>
-          <el-input v-model="linkForm.url" placeholder="https://example.com 或 /internal-path" />
+        <el-form-item label="链接地址">
+          <el-input v-model="linkForm.url" placeholder="https://example.com 或 /dashboard/xxx" />
         </el-form-item>
         <el-form-item label="描述">
-          <el-input v-model="linkForm.description" type="textarea" :rows="2" placeholder="简短描述（可选）" />
+          <el-input v-model="linkForm.description" type="textarea" :rows="2" placeholder="网站描述（选填）" />
         </el-form-item>
         <el-form-item label="分类">
           <el-select v-model="linkForm.category" style="width: 100%">
-            <el-option v-for="opt in categoryOptions" :key="opt.value" :label="opt.label" :value="opt.value" />
+            <el-option
+              v-for="cat in categoryOptions"
+              :key="cat.value"
+              :label="cat.label"
+              :value="cat.value"
+            />
           </el-select>
         </el-form-item>
-        <el-form-item label="类型">
-          <el-switch v-model="linkForm.is_internal" active-text="内部链接" inactive-text="外部链接" />
+        <el-form-item label="内部链接">
+          <el-switch v-model="linkForm.is_internal" />
+          <span class="form-hint">内部链接使用前端路由跳转</span>
         </el-form-item>
-        <el-form-item label="图标">
-          <div class="icon-upload-row">
-            <el-upload
-              :show-file-list="false"
-              :before-upload="handleIconUpload"
-              accept="image/*"
-            >
-              <div class="icon-uploader">
-                <img v-if="iconPreview" :src="iconPreview" class="icon-preview" />
-                <el-icon v-else class="icon-upload-placeholder" size="24"><Plus /></el-icon>
-              </div>
-            </el-upload>
-            <el-input v-model="linkForm.icon_emoji" placeholder="或输入 Emoji" style="width: 140px; margin-left: 12px" />
-            <span class="form-hint">上传图片或输入 Emoji</span>
-          </div>
+        <el-form-item label="启用">
+          <el-switch v-model="linkForm.is_active" />
+          <span class="form-hint">关闭后前台不显示</span>
+        </el-form-item>
+        <el-form-item label="图标图片">
+          <el-upload
+            class="icon-uploader"
+            :show-file-list="false"
+            :before-upload="handleIconUpload"
+            accept="image/*"
+          >
+            <img v-if="iconPreview" :src="iconPreview" class="icon-preview" />
+            <div v-else class="icon-upload-placeholder">
+              <el-icon size="20"><Plus /></el-icon>
+            </div>
+          </el-upload>
+        </el-form-item>
+        <el-form-item label="图标Emoji">
+          <el-input v-model="linkForm.icon_emoji" placeholder="📊（图片图标优先）" />
         </el-form-item>
         <el-form-item label="排序">
-          <el-input-number v-model="linkForm.sort_order" :min="0" :max="9999" />
-          <span class="form-hint">数字越小越靠前</span>
+          <el-input-number v-model="linkForm.sort_order" :min="0" />
         </el-form-item>
       </el-form>
       <template #footer>
         <el-button @click="showDialog = false">取消</el-button>
-        <el-button type="primary" :loading="submitting" @click="handleSubmit">
+        <el-button type="primary" @click="handleSubmit" :loading="submitting">
           {{ editingLink ? '保存' : '添加' }}
         </el-button>
       </template>
@@ -229,11 +222,11 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, computed, onMounted, nextTick } from 'vue'
+import { ref, reactive, onMounted, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import {
   Plus, ArrowDown, ArrowRight, User, UserFilled, SwitchButton,
-  Link, Edit, Delete, Download, FolderOpened, Monitor, Tools, MagicStick, Setting
+  Link, Edit, Delete, Download, FolderOpened, Star, Monitor, Tools, MagicStick, Setting
 } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import RivenLogo from '@/components/RivenLogo.vue'
@@ -244,6 +237,7 @@ const router = useRouter()
 const userStore = useUserStore()
 
 const categories = [
+  { key: 'favorites', label: '我的收藏', icon: Star },
   { key: 'work_sites', label: '工作站点', icon: Monitor },
   { key: 'personal_sites', label: '个人站点', icon: User },
   { key: 'tools', label: '实用工具', icon: Tools },
@@ -257,28 +251,8 @@ const categoryOptions = [
   { value: 'ai_tools', label: 'AI工具' },
 ]
 
-// 内部项目渐变色映射
-const gradientMap: Record<string, string> = {
-  iqair: 'iqair',
-  '数据': 'iqair',
-  ciyun: 'ciyun',
-  '词云': 'ciyun',
-  bi: 'bi',
-  'BI': 'bi',
-  '看板': 'bi',
-}
-
-function getColorKey(name: string): string {
-  const lower = name.toLowerCase()
-  for (const [keyword, key] of Object.entries(gradientMap)) {
-    if (lower.includes(keyword.toLowerCase())) return key
-  }
-  return 'iqair' // 默认
-}
-
 const sectionData = reactive<Record<string, any[]>>({})
 const sectionLoading = reactive<Record<string, boolean>>({})
-const featuredLoading = ref(false)
 const activeSection = ref('work_sites')
 const scrollContainer = ref<HTMLElement | null>(null)
 const sectionRefs: Record<string, HTMLElement | null> = {}
@@ -299,20 +273,6 @@ const linkForm = reactive({
   is_active: true,
   icon_emoji: '',
   sort_order: 0,
-})
-
-// 从 API 数据中筛选内部项目作为色块展示
-const featuredProjects = computed(() => {
-  const allInternal: any[] = []
-  for (const key of Object.keys(sectionData)) {
-    const links = sectionData[key] || []
-    for (const link of links) {
-      if (link.is_internal) {
-        allInternal.push({ ...link, _colorKey: getColorKey(link.name) })
-      }
-    }
-  }
-  return allInternal
 })
 
 function setSectionRef(key: string, el: any) {
@@ -360,10 +320,44 @@ async function fetchAllSections() {
 async function fetchSectionData(key: string) {
   sectionLoading[key] = true
   try {
-    const data = await navigationApi.getLinks({ category: key })
+    let data: any[]
+    if (key === 'favorites') {
+      if (userStore.isLoggedIn) {
+        data = await navigationApi.getFavorites()
+      } else {
+        sectionData[key] = []
+        return
+      }
+    } else {
+      data = await navigationApi.getLinks({ category: key })
+    }
     sectionData[key] = Array.isArray(data) ? data : []
+    if (key === 'work_sites') {
+      sectionData[key].unshift({
+        id: 'ciyun-link',
+        name: '词云图',
+        description: '用户评价词云分析',
+        url: '/ciyun',
+        is_internal: true,
+        is_active: true,
+        icon_emoji: '☁️',
+        is_favorited: false,
+      })
+    }
   } catch {
     sectionData[key] = []
+    if (key === 'work_sites') {
+      sectionData[key] = [{
+        id: 'ciyun-link',
+        name: '词云图',
+        description: '用户评价词云分析',
+        url: '/ciyun',
+        is_internal: true,
+        is_active: true,
+        icon_emoji: '☁️',
+        is_favorited: false,
+      }]
+    }
   } finally {
     sectionLoading[key] = false
   }
@@ -387,9 +381,27 @@ function handleCardClick(link: any) {
       if (res.success && res.link?.icon_image) {
         link.icon_image = res.link.icon_image
       }
-    }).catch(() => {}).finally(() => {
+    }).catch(() => {
+      // 抓取失败静默处理
+    }).finally(() => {
       link._iconFetching = false
     })
+  }
+}
+
+async function handleFavorite(link: any, sectionKey: string) {
+  if (!userStore.isLoggedIn) {
+    router.push({ name: 'Login', query: { redirect: '/' } })
+    return
+  }
+  try {
+    const res = await navigationApi.toggleFavorite(link.id)
+    link.is_favorited = res.is_favorited
+    if (sectionKey === 'favorites' && !res.is_favorited) {
+      sectionData.favorites = sectionData.favorites.filter(l => l.id !== link.id)
+    }
+  } catch {
+    // 错误已在拦截器处理
   }
 }
 
@@ -398,7 +410,7 @@ function openAddDialog(category?: string) {
   linkForm.name = ''
   linkForm.url = ''
   linkForm.description = ''
-  linkForm.category = category || 'work_sites'
+  linkForm.category = category && category !== 'favorites' ? category : 'work_sites'
   linkForm.is_internal = false
   linkForm.is_active = true
   linkForm.icon_emoji = ''
@@ -462,6 +474,9 @@ async function handleSubmit() {
     }
     showDialog.value = false
     fetchSectionData(linkForm.category)
+    if (userStore.isLoggedIn) {
+      fetchSectionData('favorites')
+    }
   } catch {
     // 错误已在拦截器处理
   } finally {
@@ -529,64 +544,46 @@ onMounted(async () => {
 })
 </script>
 
-<style lang="scss" scoped>
-@import '@/styles/tokens.scss';
-
-// ============================================
-// 页面整体
-// ============================================
+<style scoped lang="scss">
 .nav-page {
-  min-height: 100vh;
-  background-color: var(--bg-page);
-  background-image: radial-gradient(circle, var(--bg-texture) 1px, transparent 1px);
-  background-size: 24px 24px;
+  height: 100vh;
   display: flex;
   flex-direction: column;
+  overflow: hidden;
 }
 
-// ============================================
 // 顶部栏
-// ============================================
 .top-bar {
-  position: sticky;
-  top: 0;
-  z-index: var(--z-sticky);
-  height: 56px;
-  background: var(--color-bg-overlay);
-  backdrop-filter: var(--blur-sm);
-  -webkit-backdrop-filter: var(--blur-sm);
-  border-bottom: 1px solid var(--color-border-light);
+  position: relative;
+  z-index: 100;
+  height: 60px;
+  background: rgba(255, 255, 255, 0.72);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+  flex-shrink: 0;
 }
 
 .top-content {
-  max-width: 1400px;
-  margin: 0 auto;
   height: 100%;
-  padding: 0 24px;
+  padding: 0 32px;
   display: flex;
   align-items: center;
   justify-content: space-between;
 }
 
-.top-left {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
 .top-right {
   display: flex;
   align-items: center;
-  gap: 16px;
 }
 
 .user-avatar {
   display: flex;
   align-items: center;
   gap: 8px;
+  padding: 6px 12px;
+  border-radius: 20px;
   cursor: pointer;
-  padding: 4px 8px;
-  border-radius: var(--radius-full);
   transition: background var(--transition-fast);
 
   &:hover {
@@ -595,77 +592,67 @@ onMounted(async () => {
 }
 
 .avatar-circle {
-  background: linear-gradient(135deg, #4F46E5, #7C3AED);
-  color: #fff;
+  background: linear-gradient(135deg, #007AFF, #5AC8FA);
+  color: white;
   font-weight: 600;
-  font-size: 14px;
 }
 
 .username {
   font-size: 14px;
+  color: #1C1C1E;
   font-weight: 500;
-  color: var(--color-text-primary);
 }
 
-// ============================================
-// 主体布局
-// ============================================
+// 主体区域
 .body-area {
   flex: 1;
   display: flex;
-  max-width: 1400px;
-  margin: 0 auto;
-  width: 100%;
+  overflow: hidden;
 }
 
-// ============================================
-// 左侧边栏 — 140px 宽
-// ============================================
+// 左侧边栏
 .sidebar {
-  width: 140px;
-  min-width: 140px;
-  padding: 20px 10px;
-  background: var(--sidebar-bg);
-  border-right: 1px solid var(--color-border-light);
-  position: sticky;
-  top: 56px;
-  height: calc(100vh - 56px);
+  width: 220px;
+  flex-shrink: 0;
+  background: rgba(245, 247, 250, 0.6);
+  backdrop-filter: blur(20px);
+  border-right: 1px solid rgba(0, 0, 0, 0.06);
+  padding: 20px 12px;
   overflow-y: auto;
 }
 
 .sidebar-nav {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 4px;
 }
 
 .sidebar-item {
   display: flex;
   align-items: center;
   gap: 10px;
-  width: 100%;
-  height: 44px;
-  padding: 0 16px;
-  border: none;
-  background: transparent;
-  cursor: pointer;
-  border-radius: 10px;
-  color: var(--color-text-secondary);
-  font-size: 13px;
+  padding: 10px 14px;
+  border-radius: 12px;
+  font-size: 14px;
   font-weight: 500;
-  transition: all var(--transition-fast);
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  transition: all 0.25s ease;
+  width: 100%;
+  text-align: left;
+  border: none;
+  background: none;
   position: relative;
 
   &:hover {
-    background: rgba(0, 0, 0, 0.03);
+    background: rgba(0, 0, 0, 0.04);
     color: var(--color-text-primary);
   }
 
   &.active {
-    background: var(--sidebar-active-bg);
-    color: var(--color-text-primary);
+    background: rgba(0, 122, 255, 0.1);
+    color: #007AFF;
     font-weight: 600;
-    box-shadow: var(--shadow-xs);
 
     &::before {
       content: '';
@@ -675,206 +662,81 @@ onMounted(async () => {
       transform: translateY(-50%);
       width: 3px;
       height: 20px;
-      background: var(--sidebar-active-indicator);
       border-radius: 0 2px 2px 0;
+      background: #007AFF;
     }
   }
 }
 
 .sidebar-label {
   flex: 1;
-  text-align: left;
 }
 
 .sidebar-count {
-  font-size: 11px;
-  color: var(--color-text-tertiary);
-  background: rgba(0, 0, 0, 0.04);
-  padding: 1px 6px;
-  border-radius: var(--radius-full);
+  font-size: 12px;
+  font-weight: 600;
+  color: #86868B;
+  background: rgba(0, 0, 0, 0.05);
+  padding: 1px 8px;
+  border-radius: 10px;
   min-width: 20px;
   text-align: center;
 }
 
-// ============================================
+.sidebar-item.active .sidebar-count {
+  color: #007AFF;
+  background: rgba(0, 122, 255, 0.12);
+}
+
 // 右侧滚动内容区
-// ============================================
 .scroll-content {
   flex: 1;
   overflow-y: auto;
-  height: calc(100vh - 56px);
+  overflow-x: hidden;
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
 }
 
 .content-wrapper {
-  padding: 24px 32px;
-  max-width: 1200px;
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 24px 40px;
 }
 
-// ============================================
-// 内部项目色块区域
-// ============================================
-.featured-section {
-  margin-bottom: 32px;
-}
-
-.featured-grid {
-  display: flex;
-  gap: 20px;
-  flex-wrap: wrap;
-}
-
-.featured-card {
-  width: 280px;
-  min-height: 200px;
-  border-radius: 18px;
-  padding: 24px;
-  cursor: pointer;
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-  position: relative;
-  overflow: hidden;
-  color: #fff;
-  transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-  animation: featuredSlideIn 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94) backwards;
-  animation-delay: calc(var(--i) * 0.1s + 0.1s);
-
-  &::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    background: linear-gradient(135deg, rgba(255,255,255,0.12) 0%, transparent 60%);
-    pointer-events: none;
-  }
-
-  &--iqair {
-    background: var(--gradient-iqair);
-  }
-  &--ciyun {
-    background: var(--gradient-ciyun);
-  }
-  &--bi {
-    background: var(--gradient-bi);
-  }
-
-  &:hover {
-    transform: translateY(-4px) scale(1.02);
-    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15);
-  }
-
-  &:active {
-    transform: translateY(-2px) scale(1.01);
-  }
-}
-
-.featured-card__icon {
-  width: 48px;
-  height: 48px;
-  border-radius: 12px;
-  background: rgba(255, 255, 255, 0.2);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 28px;
-  overflow: hidden;
-  flex-shrink: 0;
-
-  img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-  }
-}
-
-.featured-card__body {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.featured-card__title {
-  font-size: 18px;
-  font-weight: 700;
-  color: rgba(255, 255, 255, 0.95);
-  margin: 0;
-}
-
-.featured-card__desc {
-  font-size: 13px;
-  color: rgba(255, 255, 255, 0.75);
-  line-height: 1.5;
-  margin: 0;
-}
-
-.featured-card__arrow {
-  position: absolute;
-  bottom: 20px;
-  right: 20px;
-  color: rgba(255, 255, 255, 0.6);
-  transition: all var(--transition-fast);
-}
-
-.featured-card:hover .featured-card__arrow {
-  color: rgba(255, 255, 255, 0.95);
-  transform: translateX(4px);
-}
-
-@keyframes featuredSlideIn {
-  from {
-    opacity: 0;
-    transform: translateY(20px) scale(0.95);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
-}
-
-// ============================================
 // 分类区块
-// ============================================
 .category-section {
-  margin-bottom: 12px;
+  margin-bottom: 40px;
 }
 
 .section-header {
   display: flex;
-  align-items: center;
   justify-content: space-between;
+  align-items: center;
   margin-bottom: 20px;
+  padding-bottom: 10px;
+  border-bottom: 2px solid rgba(0, 122, 255, 0.08);
+}
+
+.section-title-area {
+  display: flex;
+  align-items: center;
+  gap: 10px;
 }
 
 .section-title {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  flex: 1;
-  margin: 0;
-}
-
-.section-title__line {
-  flex: 1;
-  height: 1px;
-  background: linear-gradient(90deg, transparent, rgba(0, 0, 0, 0.08), transparent);
-}
-
-.section-title__text {
-  font-size: 16px;
-  font-weight: 600;
+  font-size: 22px;
+  font-weight: 700;
   color: var(--color-text-primary);
-  white-space: nowrap;
 }
 
-// ============================================
-// 普通链接卡片
-// ============================================
+// 链接卡片网格
 .links-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
   gap: 16px;
 }
 
+// 链接卡片
 .link-card {
   position: relative;
   background: #FFFFFF;
@@ -987,6 +849,42 @@ onMounted(async () => {
   color: var(--color-accent);
 }
 
+// 红心收藏按钮
+.heart-btn {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  border: none;
+  background: none;
+
+  &:hover {
+    background: rgba(255, 59, 48, 0.1);
+  }
+
+  &.favorited .heart-icon {
+    animation: heartPulse 0.4s ease;
+  }
+}
+
+.heart-icon {
+  width: 18px;
+  height: 18px;
+  transition: all var(--transition-fast);
+}
+
+@keyframes heartPulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.3); }
+}
+
 // 管理员操作按钮
 .card-admin {
   position: absolute;
@@ -1071,11 +969,6 @@ onMounted(async () => {
   }
 }
 
-.icon-upload-row {
-  display: flex;
-  align-items: center;
-}
-
 .icon-preview {
   width: 100%;
   height: 100%;
@@ -1095,13 +988,10 @@ onMounted(async () => {
   color: var(--color-text-tertiary);
 }
 
-// ============================================
 // 响应式
-// ============================================
 @media (max-width: 768px) {
   .sidebar {
     width: 60px;
-    min-width: 60px;
     padding: 16px 6px;
   }
 
@@ -1113,38 +1003,15 @@ onMounted(async () => {
   .sidebar-item {
     justify-content: center;
     padding: 10px;
-
-    &.active::before {
-      left: 0;
-    }
   }
 
   .content-wrapper {
     padding: 16px;
   }
 
-  .featured-grid {
-    flex-direction: column;
-  }
-
-  .featured-card {
-    width: 100%;
-  }
-
   .links-grid {
     grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
     gap: 12px;
-  }
-}
-
-@media (min-width: 769px) and (max-width: 1199px) {
-  .featured-grid {
-    gap: 16px;
-  }
-
-  .featured-card {
-    width: calc(50% - 8px);
-    min-width: 240px;
   }
 }
 </style>

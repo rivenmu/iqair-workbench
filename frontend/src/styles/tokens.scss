@@ -1,4 +1,4 @@
-// ============================================
+﻿// ============================================
 // 苹果简约风格设计 Token 系统
 // 统一管理：色彩、圆角、阴影、动效、间距
 // ============================================
@@ -96,6 +96,19 @@
   --z-modal-backdrop: 1300;
   --z-modal: 1400;
   --z-toast: 1500;
+  // ==================== 内部项目渐变色 ====================
+  --gradient-iqair: linear-gradient(135deg, #4F46E5 0%, #7C3AED 100%);
+  --gradient-ciyun: linear-gradient(135deg, #0891B2 0%, #06B6D4 100%);
+  --gradient-bi: linear-gradient(135deg, #EA580C 0%, #F97316 100%);
+
+  // 首页背景纹理
+  --bg-page: #FAFAFA;
+  --bg-texture: rgba(0, 0, 0, 0.015);
+
+  // 边栏
+  --sidebar-bg: #F5F5F7;
+  --sidebar-active-bg: #FFFFFF;
+  --sidebar-active-indicator: #007AFF;
 }
 
 // ==================== Mixins ====================
@@ -104,6 +117,19 @@
   backdrop-filter: var(--blur-md);
   -webkit-backdrop-filter: var(--blur-md);
   border: 1px solid rgba(255, 255, 255, 0.6);
+  // ==================== 内部项目渐变色 ====================
+  --gradient-iqair: linear-gradient(135deg, #4F46E5 0%, #7C3AED 100%);
+  --gradient-ciyun: linear-gradient(135deg, #0891B2 0%, #06B6D4 100%);
+  --gradient-bi: linear-gradient(135deg, #EA580C 0%, #F97316 100%);
+
+  // 首页背景纹理
+  --bg-page: #FAFAFA;
+  --bg-texture: rgba(0, 0, 0, 0.015);
+
+  // 边栏
+  --sidebar-bg: #F5F5F7;
+  --sidebar-active-bg: #FFFFFF;
+  --sidebar-active-indicator: #007AFF;
 }
 
 @mixin card-style {
@@ -111,6 +137,19 @@
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-md);
   border: 1px solid var(--color-border-light);
+  // ==================== 内部项目渐变色 ====================
+  --gradient-iqair: linear-gradient(135deg, #4F46E5 0%, #7C3AED 100%);
+  --gradient-ciyun: linear-gradient(135deg, #0891B2 0%, #06B6D4 100%);
+  --gradient-bi: linear-gradient(135deg, #EA580C 0%, #F97316 100%);
+
+  // 首页背景纹理
+  --bg-page: #FAFAFA;
+  --bg-texture: rgba(0, 0, 0, 0.015);
+
+  // 边栏
+  --sidebar-bg: #F5F5F7;
+  --sidebar-active-bg: #FFFFFF;
+  --sidebar-active-indicator: #007AFF;
 }
 
 @mixin hover-lift {
@@ -119,10 +158,37 @@
     transform: translateY(-2px);
     box-shadow: var(--shadow-lg);
   }
+  // ==================== 内部项目渐变色 ====================
+  --gradient-iqair: linear-gradient(135deg, #4F46E5 0%, #7C3AED 100%);
+  --gradient-ciyun: linear-gradient(135deg, #0891B2 0%, #06B6D4 100%);
+  --gradient-bi: linear-gradient(135deg, #EA580C 0%, #F97316 100%);
+
+  // 首页背景纹理
+  --bg-page: #FAFAFA;
+  --bg-texture: rgba(0, 0, 0, 0.015);
+
+  // 边栏
+  --sidebar-bg: #F5F5F7;
+  --sidebar-active-bg: #FFFFFF;
+  --sidebar-active-indicator: #007AFF;
 }
 
 @mixin flex-center {
   display: flex;
   justify-content: center;
   align-items: center;
+  // ==================== 内部项目渐变色 ====================
+  --gradient-iqair: linear-gradient(135deg, #4F46E5 0%, #7C3AED 100%);
+  --gradient-ciyun: linear-gradient(135deg, #0891B2 0%, #06B6D4 100%);
+  --gradient-bi: linear-gradient(135deg, #EA580C 0%, #F97316 100%);
+
+  // 首页背景纹理
+  --bg-page: #FAFAFA;
+  --bg-texture: rgba(0, 0, 0, 0.015);
+
+  // 边栏
+  --sidebar-bg: #F5F5F7;
+  --sidebar-active-bg: #FFFFFF;
+  --sidebar-active-indicator: #007AFF;
 }
+

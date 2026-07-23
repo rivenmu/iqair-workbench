@@ -1,31 +1,95 @@
-# Repository Guidelines
+# CLAUDE.md
 
-## Project Structure & Module Organization
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-This is an IQAir data workbench with a Vue 3 frontend and Django 5 API. `frontend/src/` contains views, layouts, components, Pinia stores, API clients, routes, and SCSS tokens; static assets live in `frontend/public/`. Keep feature UI close to its view (for example, dashboard panels in `frontend/src/views/dashboard/`).
-
-`backend/config/` holds Django, ASGI, Celery, and URL configuration. Domain code is organized by Django app in `backend/apps/` (`accounts`, `projects`, `dashboard`, `navigation`, `snapshots`, and `audit`), with models, serializers, views, URLs, and migrations together. Shared logic belongs in `backend/services/`; background work belongs in `backend/tasks/`. Docker, Nginx, and production deployment files are at the root. Runtime data under `data/` and uploads under `uploadfiles/` are untracked.
-
-## Build, Test, and Development Commands
-
-Run the complete local stack with:
+## Commands
 
 ```bash
-docker compose up -d --build       # build and start all services
-docker compose logs -f backend     # follow a service log
+# Start all services (dev mode with hot-reload)
+docker compose up -d --build
+
+# View logs
+docker compose logs -f backend       # Django API
+docker compose logs -f frontend      # Vite HMR (port 8888)
+docker compose logs -f celery-worker
+docker compose logs -f celery-beat
+
+# Django management (run inside container)
 docker compose exec backend python manage.py migrate
+docker compose exec backend python manage.py check
+docker compose exec backend python manage.py init_admin
+docker compose exec backend python manage.py showmigrations
+docker compose exec backend python manage.py sqlmigrate <app_name> <migration_id>
+
+# Interactive shell
+docker compose exec backend python manage.py shell_plus
+docker compose exec backend bash
+docker compose exec frontend sh
+
+# Restart single service
+docker compose restart backend
+
+# Stop all
+docker compose down
+
+# Production update
+./update.sh    # backup DB -> git pull -> rebuild -> cleanup
+
+# MySQL backup
+docker compose exec mysql mysqldump -u root -p iqair_workbench > backup.sql
 ```
 
-For frontend-only work, run `npm install`, `npm run dev`, or `npm run build` from `frontend/`; the build performs Vue type checking before generating `dist/`. Validate backend configuration with `docker compose exec backend python manage.py check`. Run Django tests with `docker compose exec backend python manage.py test` when tests are added.
+## Architecture
 
-## Coding Style & Naming Conventions
+### Stack
 
-Follow the existing style: four-space indentation for Python and two-space indentation for TypeScript, Vue, and SCSS. Use `PascalCase.vue` for components/views (`UserManagement.vue`), camelCase for TypeScript functions and variables, and `snake_case` for Python modules and functions. Keep API client modules in `frontend/src/api/`; use Django serializers and permission classes rather than embedding validation or authorization logic in views. No formatter or linter is configured—avoid unrelated formatting churn and always run the frontend build after TypeScript/Vue changes.
+| Layer | Technology |
+|-------|------------|
+| Frontend | Vue 3 + Vite + TypeScript + Pinia + Element Plus + ECharts |
+| Backend | Django 5 + DRF + Celery + Channels + SimpleUI |
+| Database | MySQL 8.0 |
+| Cache/Queue | Redis 7 |
+| Deployment | Docker Compose + Gunicorn (WSGI) |
 
-## Testing Guidelines
+### Backend Structure (`backend/`)
 
-Add backend tests within the owning Django app (for example, `backend/apps/accounts/tests/`) and name test methods `test_<behavior>`. Cover permissions, authentication, API responses, and model changes. For UI changes, at minimum run `npm run build` and manually verify the relevant screen against the API.
+- **`config/`** — Django settings, root URL conf, Celery app, ASGI/WSGI
+- **`apps/accounts/`** — User model (AbstractUser + `role`: admin/user), JWT login/register/SSO, IP tracking, custom permissions (IsAdmin, IsAdminOrReadOnly, IsOwnerOrAdmin)
+- **`apps/projects/`** — Project model (navigation card items), CRUD with AuditLogMixin
+- **`apps/dashboard/`** — Core data domain: Brand, FilterRevenue, UIText, PlatformSalesData. All dashboard data flows through `DashboardService` (in `services/`)
+- **`apps/snapshots/`** — DataSnapshot model with hybrid storage: JSON in MySQL (<=1MB) or filesystem (>1MB). `SnapshotService` handles create/restore/cleanup
+- **`apps/audit/`** — OperationLog model, `AuditLogService`, `AuditLogMixin` (auto-log create/update/destroy on any ViewSet). 90-day retention with compaction after 7 days
+- **`apps/navigation/`** — WebsiteLink (categorized bookmarks) + UserFavorite
+- **`services/`** — Business logic layer separate from views:
+  - `dashboard_service.py` — get/save aggregated dashboard data (brands + revenues + UI texts), auto-creates snapshots on save
+  - `platform_data_service.py` — Excel parsing (openpyxl), upsert PlatformSalesData, yoy comparison queries
+- **`tasks/`** — Celery shared tasks: `cleanup_old_snapshots` (daily 2am), `cleanup_old_logs` (daily 3am)
 
-## Commit & Pull Request Guidelines
+### Frontend Structure (`frontend/src/`)
 
-History uses short imperative summaries such as `Add production deployment config: ...`; use that style and keep each commit focused. Pull requests should explain the user-visible change, list validation performed, link the related issue when available, and include screenshots for UI changes. Highlight migrations, environment-variable changes, and deployment/configuration impacts explicitly. Never commit `.env`, credentials, generated runtime data, or uploads.
+- **`api/`** — Axios-based API clients with unified interceptor (auto JWT refresh on 401, error toast)
+- **`router/`** — Vue Router with auth guards: `requiresAuth`, `requiresAdmin`
+- **`stores/`** — Pinia store (user: token, refreshToken, userInfo, login/logout)
+- **`styles/`** — Apple-inspired design token system (colors, radii, shadows, spacing, fonts, glass effects)
+- **`views/dashboard/`** — Multiple dashboard panels sharing the same data flow pattern
+
+### API Routes
+
+All under `config/urls.py`:
+
+- `api/auth/` — login, register, me, change-password, admin-sso, users CRUD
+- `api/projects/` — project CRUD
+- `api/dashboard/{project_pk}/` — data get/save, brands CRUD, ui-texts
+- `api/dashboard/platform/` — Excel upload, query (with yoy), date-range, template download
+- `api/snapshots/{project_pk}/snapshots/` — list, manual create, restore
+- `api/audit/` — operation logs (read-only)
+- `api/navigation/` — website links + favorites
+
+### Key Design Decisions
+
+- **No password validators** — all Django built-in validators removed intentionally
+- **Snapshot-on-save** — saving dashboard data automatically snapshots the previous state (enables undo/restore)
+- **Hybrid snapshot storage** — threshold at 1MB, large snapshots stored outside MySQL
+- **Audit trail** — `AuditLogMixin` auto-records all CRUD actions; logs compacted after 7 days (one record per day)
+- **Permissions** — admin can do everything, regular users see only own data (snapshots, logs)
+- **Frontend design** — Apple-inspired: glassmorphism panels, SF Pro fonts, muted color palette, CSS custom property tokens

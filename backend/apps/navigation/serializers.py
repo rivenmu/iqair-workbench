@@ -1,6 +1,6 @@
-from rest_framework import serializers
+﻿from rest_framework import serializers
 
-from .models import WebsiteLink, UserFavorite
+from .models import WebsiteLink
 
 
 def _build_icon_url(obj, request):
@@ -34,28 +34,13 @@ class WebsiteLinkListSerializer(serializers.ModelSerializer):
     category_display = serializers.CharField(
         source='get_category_display', read_only=True
     )
-    is_favorited = serializers.SerializerMethodField()
     icon_image = serializers.SerializerMethodField()
 
     def get_icon_image(self, obj):
         return _build_icon_url(obj, self.context.get('request'))
 
-    def get_is_favorited(self, obj):
-        request = self.context.get('request')
-        if not request or not request.user.is_authenticated:
-            return False
-        return obj.favorited_by.filter(user=request.user).exists()
-
     class Meta:
         model = WebsiteLink
         fields = ['id', 'name', 'url', 'description', 'icon_image',
                   'icon_emoji', 'category', 'category_display',
-                  'is_internal', 'sort_order', 'is_active', 'is_favorited']
-
-
-class UserFavoriteSerializer(serializers.ModelSerializer):
-    """用户收藏序列化器"""
-    class Meta:
-        model = UserFavorite
-        fields = ['id', 'user', 'website_link', 'created_at']
-        read_only_fields = ['id', 'user', 'created_at']
+                  'is_internal', 'sort_order', 'is_active']

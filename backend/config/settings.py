@@ -1,4 +1,4 @@
-import os
+﻿import os
 from datetime import timedelta
 from pathlib import Path
 
@@ -21,7 +21,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'whitenoise.runserver_nostatic',
     'django.contrib.staticfiles',
-    # 第三方
+    # 绗笁鏂?
     'rest_framework',
     'rest_framework_simplejwt',
     'rest_framework_simplejwt.token_blacklist',
@@ -30,7 +30,7 @@ INSTALLED_APPS = [
     'django_celery_results',
     'drf_spectacular',
     'django_filters',
-    # 本地应用
+    # 鏈湴搴旂敤
     'apps.accounts',
     'apps.projects',
     'apps.dashboard',
@@ -72,7 +72,7 @@ TEMPLATES = [
 WSGI_APPLICATION = 'config.wsgi.application'
 ASGI_APPLICATION = 'config.asgi.application'
 
-# ============ 数据库配置 ============
+# ============ 鏁版嵁搴撻厤缃?============
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
@@ -109,7 +109,7 @@ CHANNEL_LAYERS = {
     }
 }
 
-# ============ Celery 配置 ============
+# ============ Celery 閰嶇疆 ============
 CELERY_BROKER_URL = f'redis://:{REDIS_PASSWORD}@{REDIS_HOST}:{REDIS_PORT}/0'
 CELERY_RESULT_BACKEND = 'django-db'
 CELERY_ACCEPT_CONTENT = ['json']
@@ -151,7 +151,7 @@ SIMPLE_JWT = {
 CORS_ALLOW_ALL_ORIGINS = True
 CORS_ALLOW_CREDENTIALS = True
 
-# ============ CSRF（Admin代理访问） ============
+# ============ CSRF锛圓dmin浠ｇ悊璁块棶锛?============
 CSRF_TRUSTED_ORIGINS = [
     'http://10.0.0.6:8888',
     'http://10.0.0.6:8000',
@@ -163,18 +163,18 @@ CSRF_TRUSTED_ORIGINS = [
 SESSION_COOKIE_SAMESITE = 'Lax'
 CSRF_COOKIE_SAMESITE = 'Lax'
 
-# ============ 密码验证 ============
-# 已取消所有密码复杂度限制（长度、常见度、相似度、纯数字检查），
-# 用户可设置任意长度和复杂度的密码。
+# ============ 瀵嗙爜楠岃瘉 ============
+# 宸插彇娑堟墍鏈夊瘑鐮佸鏉傚害闄愬埗锛堥暱搴︺€佸父瑙佸害銆佺浉浼煎害銆佺函鏁板瓧妫€鏌ワ級锛?
+# 鐢ㄦ埛鍙缃换鎰忛暱搴﹀拰澶嶆潅搴︾殑瀵嗙爜銆?
 AUTH_PASSWORD_VALIDATORS = []
 
-# ============ 国际化 ============
+# ============ 鍥介檯鍖?============
 LANGUAGE_CODE = 'zh-hans'
 TIME_ZONE = 'Asia/Shanghai'
 USE_I18N = True
 USE_TZ = True
 
-# ============ 静态文件 ============
+# ============ 闈欐€佹枃浠?============
 STATIC_URL = '/static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedStaticFilesStorage'
@@ -183,18 +183,18 @@ MEDIA_ROOT = BASE_DIR / 'media'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-# ============ SimpleUI 配置 ============
+# ============ SimpleUI 閰嶇疆 ============
 SIMPLEUI_HOME_PAGE = None
-SIMPLEUI_HOME_TITLE = 'RIVEN 管理后台'
+SIMPLEUI_HOME_TITLE = 'RIVEN 绠＄悊鍚庡彴'
 SIMPLEUI_HOME_ICON = 'fa fa-dashboard'
 SIMPLEUI_INDEX = None
 SIMPLEUI_LOGO = None
 SIMPLEUI_DEFAULT_THEME = 'admin.lte.css'
 
-# 隐藏不需要的内置模型
+# 闅愯棌涓嶉渶瑕佺殑鍐呯疆妯″瀷
 SIMPLEUI_STATIC_OFFLINE = True
 
-# SimpleUI 菜单排序与精简
+# SimpleUI 鑿滃崟鎺掑簭涓庣簿绠€
 SIMPLEUI_ADMIN_ORDER = [
     'navigation.WebsiteLink',
     'accounts.User',
@@ -208,14 +208,14 @@ SIMPLEUI_ADMIN_ORDER = [
     'django_celery_beat.ClockedSchedule',
 ]
 
-# ============ 项目自定义配置 ============
-SNAPSHOTS_DIR = os.environ.get('SNAPSHOTS_DIR', '/app/data/snapshots')
+# ============ 椤圭洰鑷畾涔夐厤缃?============
+SNAPSHOTS_DIR = os.environ.get('SNAPSHOTS_DIR', str(BASE_DIR.parent / 'data' / 'snapshots'))
 SNAPSHOT_RETENTION_DAYS = 30
 SNAPSHOT_RETENTION_COUNT = 100
 LOG_RETENTION_DAYS = 90
 LOG_FULL_KEEP_DAYS = 7
 
-# 日志
+# 鏃ュ織
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
@@ -229,7 +229,7 @@ LOGGING = {
         'console': {'class': 'logging.StreamHandler', 'formatter': 'verbose'},
         'file': {
             'class': 'logging.FileHandler',
-            'filename': '/app/logs/django.log',
+            'filename': str(BASE_DIR / 'logs' / 'django.log'),
             'formatter': 'verbose',
         },
     },
