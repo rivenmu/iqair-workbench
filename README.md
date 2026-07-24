@@ -312,6 +312,83 @@ docker compose up -d --build
 | `VITE_APP_TITLE` | 应用标题 | `IQAir 数据分析工作台` |
 | `CELERY_WORKERS` | Celery 并发数 | `2` |
 
+---
+
+## 环境切换高危提醒
+
+> 本项目的 `docker-compose.yml` 由本地开发环境和服务器生产环境共用。
+> 下方操作极易导致一端正常运行、另一端崩溃，修改前务必对照检查。
+
+### P0 致命修改（改前必读）
+
+1. **修改 docker-compose.yml 的端口或网络**
+   - 影响：Nginx 反向代理、Vite proxy、update.sh mysqldump 全部依赖端口映射
+   - 检查：改后必须确认 `nginx/iqair.conf` 的 proxy_pass 端口、`vite.config.ts` 的 proxy target、`update.sh` 的 mysqldump 端口三者一致
+
+2. **修改 settings.py 的数据库默认值**
+   - 影响：一个环境必然连不上数据库
+   - 检查：保持 `os.environ.get()` 模式，不要硬编码 HOST/PORT/PASSWORD
+
+3. **改服务器 MySQL 密码但未更新 update.sh**
+   - 影响：mysqldump 备份失败，同步容器拉取失效
+   - 检查：`update.sh` 第 38 行硬编码密码、同步容器的 SYNC_SERVER_DB_PASSWORD 需同步修改
+
+4. **删除 docker-compose.override.yml**
+   - 影响：本地热重载、环境识别、数据库同步全部失效
+   - 恢复：从 `docker-compose.override.example.yml` 复制并填入本地密码
+
+### P1 高危修改
+
+5. **修改 vite.config.ts proxy** — 保持 `env.VITE_API_BASE_URL || 'http://10.0.0.6:8000'` 模式，不硬编码 localhost
+6. **修改 Dockerfile** — 本地先 `docker compose build` 验证再 push
+7. **修改 Celery beat_schedule** — 新任务内部用 `is_production()` 守卫，避免本地任务在生产报错
+8. **数据库迁移** — 迁移文件必须提交到 git 并在两端同步执行，绝不手动在生产跑 migrate
+
+### P2 中危修改
+
+9. **修改 .gitignore** — 验证 `docs/` 已入库、`.env` 和 `override.yml` 仍被忽略
+10. **修改 CSRF_TRUSTED_ORIGINS** — 确认列表同时包含生产域名（10.0.0.6、iqair.rivenmu.cn）和本地（localhost）
+11. **新增 pip 依赖** — 及时更新 `requirements.txt`，否则生产 build 缺少包
+12. **修改 nginx/iqair.conf** — 生产域名配置，改后先在生产 `nginx -t` 验证
+
+---
+
+## 后续开发注意事项
+
+### 环境自适应原则
+
+本项目采用零干预环境识别：代码自动判断本地/生产，无需手动设置环境标记。
+
+- 判断环境：`from utils.env_detect import is_local, is_production`
+- 环境差异：只通过 `os.environ.get()` 和 `.env` 注入，不入库
+- 本地独有配置：只放在 `docker-compose.override.yml`（已被 gitignore）
+
+### 推送前检查清单
+
+1. `git status` 确认未误提交 `.env`、`venv/`、`node_modules/` 等敏感文件
+2. `git diff` 确认未意外改动 `docker-compose.yml`、`update.sh` 等生产关键文件
+3. 确认新增的数据库迁移文件已包含在本次提交中
+4. `docker compose up -d --build` 本地完整启动通过
+5. 访问 `localhost:8888` 和 `/admin` 确认功能正常
+
+### 部署后检查清单
+
+1. `docker compose ps` 所有服务 Up
+2. `docker compose logs --tail=50 backend` 无 ERROR
+3. 访问生产域名确认前端加载
+4. 访问 `/admin` 确认后台显示"服务器生产"（非"本地"）
+5. 确认"拉取服务器数据库"按钮不显示
+
+### 本地同步异常时
+
+```
+docker compose exec backend python -c "from utils.env_detect import get_env_info; print(get_env_info())"
+docker compose logs db-sync
+```
+
+确认 SSH 可连接服务器且密码与 `update.sh` 一致。
+
+
 ## 许可证
 
 私有项目，版权所有 &copy; 2026 Riven

@@ -1,0 +1,146 @@
+{% extends "admin/base_site.html" %}
+{% load static %}
+
+{% block extrastyle %}
+{{ block.super }}
+<style>
+  .system-env-panel {
+    max-width: 480px;
+    margin: 32px auto;
+    padding: 24px;
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+  }
+  .system-env-panel h2 {
+    margin: 0 0 16px;
+    font-size: 16px;
+    font-weight: 600;
+    color: #1f2937;
+  }
+  .env-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 0;
+    border-bottom: 1px solid #f3f4f6;
+    font-size: 13px;
+  }
+  .env-row:last-child { border-bottom: none; }
+  .env-label { color: #6b7280; }
+  .env-value { font-weight: 500; color: #1f2937; }
+  .env-badge {
+    display: inline-block;
+    padding: 1px 8px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 600;
+  }
+  .env-badge.local { background: #dcfce7; color: #166534; }
+  .env-badge.production { background: #fee2e2; color: #991b1b; }
+  .sync-btn {
+    display: block;
+    width: 100%;
+    margin-top: 16px;
+    padding: 8px 16px;
+    background: #2563eb;
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+  }
+  .sync-btn:hover { background: #1d4ed8; }
+  .sync-btn:disabled { background: #9ca3af; cursor: not-allowed; }
+  .sync-status {
+    margin-top: 8px;
+    font-size: 12px;
+    text-align: center;
+  }
+  .sync-status.success { color: #166534; }
+  .sync-status.failed { color: #991b1b; }
+  .sync-status.running { color: #92400e; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="system-env-panel">
+  <h2>System Environment</h2>
+  <div class="env-row">
+    <span class="env-label">Environment:</span>
+    <span class="env-value">
+      {% if is_local %}
+        <span class="env-badge local">Local Dev</span>
+      {% else %}
+        <span class="env-badge production">Production</span>
+      {% endif %}
+    </span>
+  </div>
+  {% if is_local %}
+    <div class="env-row">
+      <span class="env-label">Server:</span>
+      <span class="env-value">{{ server_host }}</span>
+    </div>
+    <div class="env-row">
+      <span class="env-label">Last Sync:</span>
+      <span class="env-value">{{ last_sync_time|default:"Never" }}</span>
+    </div>
+    <div class="env-row">
+      <span class="env-label">Sync Status:</span>
+      <span class="env-value" id="sync-status-text">{{ sync_status|default:"Idle" }}</span>
+    </div>
+    <button class="sync-btn" id="sync-trigger-btn" onclick="triggerSync()">
+      Pull Server Database to Local
+    </button>
+    <div class="sync-status" id="sync-msg"></div>
+  {% endif %}
+</div>
+
+{% if is_local %}
+<script>
+async function triggerSync() {
+  const btn = document.getElementById('sync-trigger-btn');
+  const msg = document.getElementById('sync-msg');
+  const statusText = document.getElementById('sync-status-text');
+
+  btn.disabled = true;
+  btn.textContent = 'Syncing...';
+  msg.className = 'sync-status running';
+  msg.textContent = 'Sync in progress, please wait...';
+  statusText.textContent = 'Running';
+
+  try {
+    const resp = await fetch('/api/system-env/trigger-sync/', { method: 'POST' });
+    const data = await resp.json();
+
+    if (data.success) {
+      msg.className = 'sync-status success';
+      msg.textContent = 'Sync completed successfully!';
+      statusText.textContent = 'Success';
+    } else if (data.status === 'failed') {
+      msg.className = 'sync-status failed';
+      msg.textContent = 'Sync failed: ' + (data.error_message || 'Unknown error');
+      statusText.textContent = 'Failed';
+    } else {
+      msg.className = 'sync-status running';
+      msg.textContent = 'Sync finished with status: ' + data.status;
+      statusText.textContent = data.status;
+    }
+  } catch (err) {
+    msg.className = 'sync-status failed';
+    msg.textContent = 'Request failed: ' + err.message;
+    statusText.textContent = 'Error';
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Pull Server Database to Local';
+    // Refresh after 2 seconds
+    setTimeout(() => location.reload(), 2000);
+  }
+}
+</script>
+{% endif %}
+
+{{ block.super }}
+{% endblock %}

@@ -63,5 +63,10 @@ dataease-online-installer-*/
 
 # ========== 项目相关 ==========
 .trae/
-docs/
-agent.md
+*.vue.js
+tsconfig.node.tsbuildinfo
+tsconfig.tsbuildinfo
+vite.config.d.ts
+backend/set_password.py
+backend/requirements.txt.backup
+frontend/src/views/Navigation.vue.backup

@@ -15,6 +15,7 @@ urlpatterns = [
     path('api/snapshots/', include('apps.snapshots.urls')),
     path('api/audit/', include('apps.audit.urls')),
     path('api/navigation/', include('apps.navigation.urls')),
+    path('api/system-env/', include('apps.system_env.urls')),
     path('api/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
 ]
 

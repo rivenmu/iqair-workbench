@@ -10,6 +10,9 @@ DEBUG = os.environ.get('DEBUG', 'True') == 'True'
 
 ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', '*').split(',')
 
+from utils.env_detect import detect_deploy_env
+DEPLOY_ENV = detect_deploy_env()
+
 INSTALLED_APPS = [
     'simpleui',
     'daphne',
@@ -37,6 +40,7 @@ INSTALLED_APPS = [
     'apps.snapshots',
     'apps.audit',
     'apps.navigation',
+    'apps.system_env',
 ]
 
 MIDDLEWARE = [
@@ -214,6 +218,19 @@ SNAPSHOT_RETENTION_DAYS = 30
 SNAPSHOT_RETENTION_COUNT = 100
 LOG_RETENTION_DAYS = 90
 LOG_FULL_KEEP_DAYS = 7
+
+# ============ Environment-Adaptive Config ============
+# Controlled by DEPLOY_ENV (auto-detected above). Local mode activates sync
+# features and dev helpers; production mode enforces safe defaults.
+SYNC_ENABLED = DEPLOY_ENV == 'local' and os.environ.get('SYNC_ENABLED', 'true').lower() == 'true'
+SYNC_SERVER_HOST = os.environ.get('SYNC_SERVER_HOST', '10.0.0.6')
+SYNC_SERVER_USER = os.environ.get('SYNC_SERVER_USER', 'root')
+SYNC_SERVER_PATH = os.environ.get('SYNC_SERVER_PATH', '/opt/iqair-workbench')
+
+if DEPLOY_ENV == 'local' and SIMPLEUI_HOME_PAGE is None:
+    from apps.system_env.admin import system_env_panel_view
+    SIMPLEUI_HOME_PAGE = system_env_panel_view
+
 
 # 鏃ュ織
 LOGGING = {

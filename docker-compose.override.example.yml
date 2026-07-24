@@ -1,0 +1,85 @@
+# =============================================================================
+# 本地开发 override 模板 (docker-compose.override.example.yml)
+#
+# 使用方法:
+#   1. 复制为本目录下的 docker-compose.override.yml
+#   2. 填入本地密码
+#   3. docker compose up -d --build
+#
+# Docker Compose 会自动合并 docker-compose.yml + docker-compose.override.yml。
+# 服务器上无 override 文件，只跑生产配置，完全不受影响。
+# =============================================================================
+
+services:
+  # ===========================================================================
+  # Backend — 本地开发覆盖
+  # ===========================================================================
+  backend:
+    environment:
+      # 环境标识：local = 本地开发模式
+      DEPLOY_ENV: local
+      # 数据同步配置（仅本地生效）
+      SYNC_ENABLED: "true"
+      SYNC_SERVER_HOST: 10.0.0.6
+      SYNC_SERVER_USER: root
+      SYNC_SERVER_PATH: /opt/iqair-workbench
+      SYNC_SERVER_DB_PASSWORD: "CHANGE_ME__SERVER_DB_PASSWORD"
+      SSH_PASSWORD: "CHANGE_ME__SSH_PASSWORD"
+    volumes:
+      # 挂载源码实现热重载
+      - ./backend:/app/backend
+    # 本地开发使用 runserver 替代 gunicorn，实现 Python 代码热重载
+    command: >
+      sh -c "
+        python manage.py migrate &&
+        python manage.py init_admin &&
+        python manage.py runserver 0.0.0.0:8000
+      "
+
+  # ===========================================================================
+  # Frontend — 本地开发覆盖
+  # ===========================================================================
+  frontend:
+    environment:
+      # Vite 代理目标指向本地后端
+      VITE_API_BASE_URL: http://localhost:8000
+    volumes:
+      # 挂载源码实现 HMR 热重载，匿名 volume 保护 node_modules
+      - ./frontend:/app/frontend
+      - /app/frontend/node_modules
+
+  # ===========================================================================
+  # 数据同步容器 — 仅本地存在
+  # ===========================================================================
+  db-sync-cron:
+    build:
+      context: ./scripts
+      dockerfile: sync/Dockerfile
+    container_name: iqair-db-sync
+    restart: unless-stopped
+    environment:
+      # 服务器连接信息
+      SERVER_HOST: 10.0.0.6
+      SERVER_USER: root
+      SERVER_DB_PASS: "CHANGE_ME__SERVER_DB_PASSWORD"
+      SSH_PASSWORD: "CHANGE_ME__SSH_PASSWORD"
+      # 同步目标数据库
+      LOCAL_DB_HOST: iqair-mysql
+      LOCAL_DB_PORT: "3306"
+      LOCAL_DB_USER: iqair
+      LOCAL_DB_PASS: iqairpassword123
+      LOCAL_DB_NAME: iqair_workbench
+      LOCAL_ROOT_PASS: rootpassword123
+      # 服务器端 compose 文件路径
+      SERVER_COMPOSE_FILE: /opt/iqair-workbench/docker-compose.yml
+    volumes:
+      - ./scripts/sync-db.sh:/sync/sync-db.sh:ro
+      - ./data/media:/sync/data/media
+      - ./data/snapshots:/sync/data/snapshots
+      # SSH 密钥（免密登录服务器）
+      - ~/.ssh:/sync/.ssh:ro
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - iqair-network
