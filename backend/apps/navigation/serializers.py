@@ -1,6 +1,6 @@
-﻿﻿from rest_framework import serializers
+from rest_framework import serializers
 
-from .models import WebsiteLink
+from .models import WebsiteLink, UserFavorite
 
 
 def _build_icon_url(obj, request):
@@ -16,15 +16,24 @@ class WebsiteLinkSerializer(serializers.ModelSerializer):
         source='get_category_display', read_only=True
     )
     icon_image = serializers.SerializerMethodField()
+    is_favorited = serializers.SerializerMethodField()
 
     def get_icon_image(self, obj):
         return _build_icon_url(obj, self.context.get('request'))
+
+    def get_is_favorited(self, obj):
+        request = self.context.get('request')
+        if not request or not request.user or not request.user.is_authenticated:
+            return False
+        return UserFavorite.objects.filter(
+            user=request.user, website_link=obj
+        ).exists()
 
     class Meta:
         model = WebsiteLink
         fields = ['id', 'name', 'url', 'description', 'icon_image',
                   'icon_emoji', 'category', 'category_display',
-                  'is_internal', 'sort_order', 'is_active',
+                  'is_internal', 'sort_order', 'is_active', 'is_favorited',
                   'created_at', 'updated_at']
         read_only_fields = ['id', 'created_at', 'updated_at']
 
@@ -35,12 +44,21 @@ class WebsiteLinkListSerializer(serializers.ModelSerializer):
         source='get_category_display', read_only=True
     )
     icon_image = serializers.SerializerMethodField()
+    is_favorited = serializers.SerializerMethodField()
 
     def get_icon_image(self, obj):
         return _build_icon_url(obj, self.context.get('request'))
+
+    def get_is_favorited(self, obj):
+        request = self.context.get('request')
+        if not request or not request.user or not request.user.is_authenticated:
+            return False
+        return UserFavorite.objects.filter(
+            user=request.user, website_link=obj
+        ).exists()
 
     class Meta:
         model = WebsiteLink
         fields = ['id', 'name', 'url', 'description', 'icon_image',
                   'icon_emoji', 'category', 'category_display',
-                  'is_internal', 'sort_order', 'is_active']
+                  'is_internal', 'sort_order', 'is_active', 'is_favorited']

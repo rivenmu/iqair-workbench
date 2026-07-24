@@ -1,4 +1,5 @@
-﻿﻿from django.db import models
+from django.conf import settings
+from django.db import models
 
 
 class LinkCategory(models.TextChoices):
@@ -42,3 +43,30 @@ class WebsiteLink(models.Model):
 
     def __str__(self):
         return self.name
+
+
+class UserFavorite(models.Model):
+    """用户收藏"""
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='favorites',
+        verbose_name='用户'
+    )
+    website_link = models.ForeignKey(
+        WebsiteLink,
+        on_delete=models.CASCADE,
+        related_name='favorited_by',
+        verbose_name='网站链接'
+    )
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name='收藏时间')
+
+    class Meta:
+        db_table = 'user_favorites'
+        verbose_name = '用户收藏'
+        verbose_name_plural = verbose_name
+        ordering = ['-created_at']
+        unique_together = [('user', 'website_link')]
+
+    def __str__(self):
+        return f'{self.user} - {self.website_link}'

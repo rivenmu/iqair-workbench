@@ -1,4 +1,4 @@
-﻿﻿<template>
+﻿﻿﻿﻿<template>
   <div class="nav-page">
     <!-- 顶部栏 -->
     <header class="top-bar">
@@ -108,7 +108,7 @@
                 <span class="section-title__line"></span>
               </h2>
               <el-button
-                v-if="userStore.isAdmin"
+                v-if="userStore.isAdmin && cat.key !== 'favorites'"
                 type="primary"
                 :icon="Plus"
                 round
@@ -145,8 +145,18 @@
                   <el-icon class="card-arrow"><ArrowRight /></el-icon>
                 </div>
 
+                <button
+                  class="heart-btn"
+                  :class="{ favorited: link.is_favorited }"
+                  @click.stop="handleFavorite(link, cat.key)"
+                >
+                  <svg viewBox="0 0 24 24" class="heart-icon" :fill="link.is_favorited ? '#FF3B30' : 'none'" :stroke="link.is_favorited ? '#FF3B30' : '#AEAEB2'" stroke-width="2">
+                    <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
+                  </svg>
+                </button>
+
                 <!-- 管理员操作按钮 -->
-                <div class="card-admin" v-if="userStore.isAdmin">
+                <div class="card-admin" v-if="userStore.isAdmin && cat.key !== 'favorites'">
                   <button class="admin-btn" title="编辑" @click.stop="openEditDialog(link)">
                     <el-icon size="14"><Edit /></el-icon>
                   </button>
@@ -162,7 +172,7 @@
               <!-- 空状态 -->
               <div v-if="!sectionLoading[cat.key] && !(sectionData[cat.key]?.length)" class="empty-state">
                 <el-icon size="40" color="#AEAEB2"><FolderOpened /></el-icon>
-                <span class="empty-text">暂无链接</span>
+                <span class="empty-text">{{ cat.key === 'favorites' ? '还没有收藏任何链接，点击红心收藏吧' : '暂无链接' }}</span>
               </div>
             </div>
           </section>
@@ -233,7 +243,7 @@ import { ref, reactive, computed, onMounted, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import {
   Plus, ArrowDown, ArrowRight, User, UserFilled, SwitchButton,
-  Link, Edit, Delete, Download, FolderOpened, Monitor, Tools, MagicStick, Setting
+  Link, Edit, Delete, Download, FolderOpened, Monitor, Tools, MagicStick, Setting, Star
 } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import RivenLogo from '@/components/RivenLogo.vue'
@@ -244,6 +254,7 @@ const router = useRouter()
 const userStore = useUserStore()
 
 const categories = [
+  { key: 'favorites', label: '我的收藏', icon: Star },
   { key: 'work_sites', label: '工作站点', icon: Monitor },
   { key: 'personal_sites', label: '个人站点', icon: User },
   { key: 'tools', label: '实用工具', icon: Tools },
@@ -360,7 +371,18 @@ async function fetchAllSections() {
 async function fetchSectionData(key: string) {
   sectionLoading[key] = true
   try {
-    const data = await navigationApi.getLinks({ category: key })
+    let data: any[]
+    if (key === 'favorites') {
+      if (userStore.isLoggedIn) {
+        data = await navigationApi.getFavorites()
+      } else {
+        sectionData[key] = []
+        sectionLoading[key] = false
+        return
+      }
+    } else {
+      data = await navigationApi.getLinks({ category: key })
+    }
     sectionData[key] = Array.isArray(data) ? data : []
   } catch {
     sectionData[key] = []
@@ -393,12 +415,28 @@ function handleCardClick(link: any) {
   }
 }
 
+async function handleFavorite(link: any, sectionKey: string) {
+  if (!userStore.isLoggedIn) {
+    router.push({ name: 'Login', query: { redirect: '/' } })
+    return
+  }
+  try {
+    const res = await navigationApi.toggleFavorite(link.id)
+    link.is_favorited = res.is_favorited
+    if (sectionKey === 'favorites' && !res.is_favorited) {
+      sectionData.favorites = sectionData.favorites.filter((l: any) => l.id !== link.id)
+    }
+  } catch {
+    // 错误已在拦截器处理
+  }
+}
+
 function openAddDialog(category?: string) {
   editingLink.value = null
   linkForm.name = ''
   linkForm.url = ''
   linkForm.description = ''
-  linkForm.category = category || 'work_sites'
+  linkForm.category = category && category !== 'favorites' ? category : 'work_sites'
   linkForm.is_internal = false
   linkForm.is_active = true
   linkForm.icon_emoji = ''
@@ -462,6 +500,9 @@ async function handleSubmit() {
     }
     showDialog.value = false
     fetchSectionData(linkForm.category)
+    if (userStore.isLoggedIn) {
+      fetchSectionData('favorites')
+    }
   } catch {
     // 错误已在拦截器处理
   } finally {
@@ -985,6 +1026,42 @@ onMounted(async () => {
 .link-card:hover .card-arrow {
   transform: translateX(4px);
   color: var(--color-accent);
+}
+
+// 红心收藏按钮
+.heart-btn {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  border: none;
+  background: none;
+
+  &:hover {
+    background: rgba(255, 59, 48, 0.1);
+  }
+
+  &.favorited .heart-icon {
+    animation: heartPulse 0.4s ease;
+  }
+}
+
+.heart-icon {
+  width: 18px;
+  height: 18px;
+  transition: all var(--transition-fast);
+}
+
+@keyframes heartPulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.3); }
 }
 
 // 管理员操作按钮

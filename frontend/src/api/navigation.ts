@@ -1,8 +1,16 @@
-﻿﻿import request from './request'
+﻿﻿﻿﻿import request from './request'
 
 export const navigationApi = {
   getLinks(params?: { category?: string }) {
     return request.get('/navigation/links/', { params })
+  },
+
+  getFavorites() {
+    return request.get('/navigation/links/favorites/')
+  },
+
+  toggleFavorite(id: number) {
+    return request.post(`/navigation/links/${id}/toggle_favorite/`)
   },
 
   createLink(data: FormData) {

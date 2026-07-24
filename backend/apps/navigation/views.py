@@ -1,4 +1,4 @@
-﻿﻿import logging
+import logging
 import mimetypes
 import ssl
 from urllib.parse import urlparse
@@ -15,7 +15,7 @@ from rest_framework.response import Response
 from apps.audit.mixins import AuditLogMixin
 from apps.accounts.permissions import IsAdmin
 
-from .models import WebsiteLink
+from .models import WebsiteLink, UserFavorite
 from .serializers import WebsiteLinkSerializer, WebsiteLinkListSerializer
 
 logger = logging.getLogger(__name__)
@@ -79,6 +79,34 @@ class WebsiteLinkViewSet(AuditLogMixin, viewsets.ModelViewSet):
         if self.action in ['list', 'retrieve', 'fetch_icon', 'serve_icon']:
             return [AllowAny()]
         return [IsAdmin()]
+
+    @action(detail=False, methods=['get'])
+    def favorites(self, request):
+        """获取当前用户的收藏列表"""
+        if not request.user or not request.user.is_authenticated:
+            return Response([], status=200)
+        favorite_ids = UserFavorite.objects.filter(
+            user=request.user
+        ).values_list('website_link_id', flat=True)
+        links = WebsiteLink.objects.filter(
+            id__in=favorite_ids, is_active=True
+        ).order_by('sort_order', '-created_at')
+        serializer = WebsiteLinkListSerializer(links, many=True, context={'request': request})
+        return Response(serializer.data)
+
+    @action(detail=True, methods=['post'])
+    def toggle_favorite(self, request, pk=None):
+        """切换收藏状态"""
+        if not request.user or not request.user.is_authenticated:
+            return Response({'error': '请先登录'}, status=401)
+        link = self.get_object()
+        favorite, created = UserFavorite.objects.get_or_create(
+            user=request.user, website_link=link
+        )
+        if not created:
+            favorite.delete()
+            return Response({'is_favorited': False})
+        return Response({'is_favorited': True})
 
     def get_serializer_class(self):
         if self.action == 'list':
