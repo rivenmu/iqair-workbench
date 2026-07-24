@@ -227,9 +227,14 @@ SYNC_SERVER_HOST = os.environ.get('SYNC_SERVER_HOST', '10.0.0.6')
 SYNC_SERVER_USER = os.environ.get('SYNC_SERVER_USER', 'root')
 SYNC_SERVER_PATH = os.environ.get('SYNC_SERVER_PATH', '/opt/iqair-workbench')
 
-if DEPLOY_ENV == 'local' and SIMPLEUI_HOME_PAGE is None:
-    from apps.system_env.admin import system_env_panel_view
-    SIMPLEUI_HOME_PAGE = system_env_panel_view
+if DEPLOY_ENV == 'local':
+    # Lazy callable: defers import until SimpleUI actually renders the page,
+    # avoiding model/admin registration conflicts during Django startup.
+    def _system_env_home(request):
+        from apps.system_env.admin import system_env_panel_view
+        return system_env_panel_view(request)
+    if SIMPLEUI_HOME_PAGE is None:
+        SIMPLEUI_HOME_PAGE = _system_env_home
 
 
 # 鏃ュ織

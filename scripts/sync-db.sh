@@ -57,10 +57,12 @@ fi
 # ---- 测试 SSH 连接 ----
 log "测试 SSH 连接到 ${SERVER_USER}@${SERVER_HOST}..."
 if ! ${SSH_CMD} "${SERVER_USER}@${SERVER_HOST}" "echo SSH_OK" >/dev/null 2>&1; then
-    log "错误: 无法 SSH 连接到服务器 ${SERVER_HOST}"
+    log "警告: 无法 SSH 连接到服务器 ${SERVER_HOST}，同步将失败"
+    log "请确认 SSH 密码/密钥已正确配置后重试"
     exit 1
+else
+    log "SSH 连接成功"
 fi
-log "SSH 连接成功"
 
 # ---- 步骤 1: 数据库同步 ----
 log "开始数据库同步..."

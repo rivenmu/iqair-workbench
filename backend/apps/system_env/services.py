@@ -2,8 +2,6 @@ import subprocess
 import logging
 from datetime import datetime, timezone
 
-from django.conf import settings
-
 from .models import SyncRecord
 
 logger = logging.getLogger(__name__)

@@ -13,6 +13,7 @@ class SyncRecordAdmin(admin.ModelAdmin):
     list_filter = ['status', 'trigger']
     readonly_fields = ['trigger', 'status', 'started_at', 'finished_at', 'duration_seconds', 'error_message', 'created_at']
     ordering = ['-started_at']
+    change_list_template = 'admin/system_env/syncrecord/change_list.html'
 
     def has_add_permission(self, request):
         return False

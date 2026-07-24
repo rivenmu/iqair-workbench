@@ -1,0 +1,46 @@
+{% extends "admin/change_list.html" %}
+
+{% block object-tools %}
+<div style="padding: 10px 0;">
+  <button type="button" id="sync-trigger-btn" onclick="triggerSync()"
+          style="padding: 8px 16px; background: #2563eb; color: #fff; border: none; border-radius: 6px; font-size: 13px; font-weight: 500; cursor: pointer;">
+    立即同步
+  </button>
+  <span id="sync-status-text" style="margin-left: 12px; font-size: 13px; color: #6b7280;"></span>
+</div>
+
+<script>
+async function triggerSync() {
+  const btn = document.getElementById('sync-trigger-btn');
+  const statusText = document.getElementById('sync-status-text');
+
+  btn.disabled = true;
+  btn.textContent = '同步中...';
+  statusText.textContent = 'Running...';
+  statusText.style.color = '#92400e';
+
+  try {
+    const resp = await fetch('/api/system-env/trigger-sync/', { method: 'POST' });
+    const data = await resp.json();
+
+    if (data.success || data.status === 'success') {
+      statusText.textContent = '同步完成！正在刷新...';
+      statusText.style.color = '#166534';
+      setTimeout(function() { location.reload(); }, 1500);
+    } else if (data.status === 'failed') {
+      statusText.textContent = '失败: ' + (data.error_message || '未知错误');
+      statusText.style.color = '#991b1b';
+    } else {
+      statusText.textContent = data.status;
+    }
+  } catch (err) {
+    statusText.textContent = '错误: ' + err.message;
+    statusText.style.color = '#991b1b';
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '立即同步';
+  }
+}
+</script>
+{{ block.super }}
+{% endblock %}
