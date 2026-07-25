@@ -220,7 +220,7 @@ onMounted(loadData)
 
 <style scoped lang="scss">
 @import '@/styles/tokens.scss';
-.home-page { min-height: 100vh; background: var(--bg-page); background-image: radial-gradient(circle, var(--bg-texture) 1px, transparent 1px); background-size: 24px 24px; }
+.home-page { min-height: 100vh; overflow-y: auto; height: 100vh; background: var(--bg-page); background-image: radial-gradient(circle, var(--bg-texture) 1px, transparent 1px); background-size: 24px 24px; }
 .top-bar { position: sticky; top: 0; z-index: var(--z-sticky); height: 56px; background: var(--color-bg-overlay); backdrop-filter: var(--blur-sm); -webkit-backdrop-filter: var(--blur-sm); border-bottom: 1px solid var(--color-border-light); }
 .top-content { max-width: 1400px; margin: 0 auto; height: 100%; padding: 0 24px; display: flex; align-items: center; justify-content: space-between; }
 .top-left { display: flex; align-items: center; gap: 12px; }

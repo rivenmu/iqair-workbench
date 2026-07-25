@@ -53,7 +53,7 @@ services:
         condition: service_healthy
     environment:
       DJANGO_SETTINGS_MODULE: config.settings
-      DJANGO_ENV: production
+      DJANGO_ENV: ${DJANGO_ENV:-dev}
       DATABASE_HOST: mysql
       DATABASE_PORT: 3306
       DATABASE_NAME: ${MYSQL_DATABASE:-iqair_workbench}
@@ -95,7 +95,7 @@ services:
         condition: service_started
     environment:
       DJANGO_SETTINGS_MODULE: config.settings
-      DJANGO_ENV: production
+      DJANGO_ENV: ${DJANGO_ENV:-dev}
       DATABASE_HOST: mysql
       DATABASE_PORT: 3306
       DATABASE_NAME: ${MYSQL_DATABASE:-iqair_workbench}
@@ -127,7 +127,7 @@ services:
         condition: service_started
     environment:
       DJANGO_SETTINGS_MODULE: config.settings
-      DJANGO_ENV: production
+      DJANGO_ENV: ${DJANGO_ENV:-dev}
       DATABASE_HOST: mysql
       DATABASE_PORT: 3306
       DATABASE_NAME: ${MYSQL_DATABASE:-iqair_workbench}

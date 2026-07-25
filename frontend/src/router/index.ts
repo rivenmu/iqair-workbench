@@ -29,6 +29,7 @@ const routes: RouteRecordRaw[] = [
     component: () => import('@/views/dashboard/CiYunPanel.vue'),
     meta: { title: '词云图', requiresAuth: false }
   },
+  { path: '/dashboard/iqair', redirect: '/dashboard/iqair-competitor' },
   { path: '/dashboard/iqair/:projectId?', redirect: '/dashboard/iqair-data' },
   { path: '/dashboard/iqair-main', redirect: '/dashboard/iqair-data' },
   {
