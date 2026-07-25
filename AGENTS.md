@@ -37,6 +37,9 @@ docker compose down
 
 # MySQL backup
 docker compose exec mysql mysqldump -u root -p iqair_workbench > backup.sql
+
+# MySQL direct CLI (ALWAYS add charset flag to avoid garbled Chinese)
+docker compose exec mysql mysql -u iqair -p --default-character-set=utf8mb4 iqair_workbench
 ```
 
 ## Architecture

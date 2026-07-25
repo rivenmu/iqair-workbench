@@ -5,8 +5,8 @@ import { useUserStore } from '@/stores/user'
 const routes: RouteRecordRaw[] = [
   {
     path: '/',
-    name: 'Navigation',
-    component: () => import('@/views/Navigation.vue'),
+    name: 'Home',
+    component: () => import('@/views/HomePage.vue'),
     meta: { title: 'RIVEN 导航', requiresAuth: false }
   },
   {

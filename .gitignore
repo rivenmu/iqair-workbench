@@ -63,6 +63,7 @@ dataease-online-installer-*/
 
 # ========== 项目相关 ==========
 .trae/
+.claude/
 *.vue.js
 tsconfig.node.tsbuildinfo
 tsconfig.tsbuildinfo

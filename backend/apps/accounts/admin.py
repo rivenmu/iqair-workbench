@@ -23,7 +23,7 @@ class UserAdmin(BaseUserAdmin):
     ordering = ('-created_at',)
 
     fieldsets = BaseUserAdmin.fieldsets + (
-        ('扩展信息', {'fields': ('role', 'phone', 'last_login_ip')}),
+        ('扩展信息', {'fields': ('role', 'phone', 'last_login_ip', 'dataease_password')}),
     )
 
     add_fieldsets = BaseUserAdmin.add_fieldsets + (

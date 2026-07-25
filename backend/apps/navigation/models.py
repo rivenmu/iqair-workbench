@@ -4,6 +4,11 @@ from django.db import models
 
 class LinkCategory(models.TextChoices):
     """导航链接分类"""
+    # 首页展示分类
+    COMMON_SITES = 'common_sites', '常用网址'
+    FRIEND_LINKS = 'friend_links', '友情链接'
+    AI_RESOURCES = 'ai_resources', 'AI工具资料'
+    # 原有分类（兼容保留）
     WORK_SITES = 'work_sites', '工作站点'
     PERSONAL_SITES = 'personal_sites', '个人站点'
     TOOLS = 'tools', '实用工具'
@@ -32,6 +37,7 @@ class WebsiteLink(models.Model):
     )
     sort_order = models.IntegerField(default=0, verbose_name='排序权重')
     is_active = models.BooleanField(default=True, verbose_name='是否启用')
+    icon_fetch_failed = models.BooleanField(default=False, verbose_name='图标抓取失败')
     created_at = models.DateTimeField(auto_now_add=True, verbose_name='创建时间')
     updated_at = models.DateTimeField(auto_now=True, verbose_name='更新时间')
 

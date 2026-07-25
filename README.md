@@ -223,8 +223,8 @@ docker compose down
 ### 数据备份
 
 ```bash
-# MySQL 备份
-docker compose exec mysql mysqldump -u root -p iqair_workbench > backup.sql
+# MySQL 备份（务必加 charset 参数，否则中文乱码）
+docker compose exec mysql mysqldump -u root -p --default-character-set=utf8mb4 iqair_workbench > backup.sql
 
 # 快照文件备份
 tar -czf snapshots_backup.tar.gz data/snapshots/
@@ -343,6 +343,7 @@ docker compose up -d --build
 6. **修改 Dockerfile** — 本地先 `docker compose build` 验证再 push
 7. **修改 Celery beat_schedule** — 新任务内部用 `is_production()` 守卫，避免本地任务在生产报错
 8. **数据库迁移** — 迁移文件必须提交到 git 并在两端同步执行，绝不手动在生产跑 migrate
+9. **MySQL 命令行操作** — 直接通过 `mysql` CLI 操作数据库时，务必加 `--default-character-set=utf8mb4` 参数，否则中文会变成乱码。通过 Django Admin 或 API 操作则无需担心（Django 自动使用 UTF-8 连接）
 
 ### P2 中危修改
 

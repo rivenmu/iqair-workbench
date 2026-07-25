@@ -14,5 +14,9 @@ export interface ProjectItem {
 export const projectsApi = {
   getProjects() {
     return request.get('/projects/')
+  },
+
+  async updateProject(id: number, data: Record<string, any>) {
+    return request.patch(`/projects/${id}/`, data)
   }
 }

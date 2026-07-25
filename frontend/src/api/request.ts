@@ -1,7 +1,6 @@
 import axios, { type AxiosInstance, type InternalAxiosRequestConfig } from 'axios'
 import { ElMessage } from 'element-plus'
 import { useUserStore } from '@/stores/user'
-import router from '@/router'
 
 const axiosInstance: AxiosInstance = axios.create({
   baseURL: '/api',
@@ -36,7 +35,7 @@ axiosInstance.interceptors.response.use(
           if (userStore.refreshToken && !error.config._retry) {
             error.config._retry = true
             try {
-              const res = await axios.post('/api/auth/token/refresh/', {
+              const res = await axios.post('/api/token/refresh/', {
                 refresh: userStore.refreshToken
               })
               userStore.token = res.data.access
@@ -44,13 +43,9 @@ axiosInstance.interceptors.response.use(
               return axiosInstance(error.config)
             } catch {
               userStore.logout()
-              router.push('/login')
-              ElMessage.error('登录已过期，请重新登录')
             }
           } else {
             userStore.logout()
-            router.push('/login')
-            ElMessage.error('请先登录')
           }
           break
         }

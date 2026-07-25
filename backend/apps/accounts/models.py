@@ -17,6 +17,10 @@ class User(AbstractUser):
     )
     phone = models.CharField(max_length=20, blank=True, verbose_name='手机号')
     last_login_ip = models.GenericIPAddressField(null=True, blank=True, verbose_name='最后登录IP')
+    dataease_password = models.CharField(
+        max_length=255, blank=True, null=True,
+        verbose_name='DataEase密码哈希(BCrypt)'
+    )
     created_at = models.DateTimeField(auto_now_add=True, verbose_name='创建时间')
     updated_at = models.DateTimeField(auto_now=True, verbose_name='更新时间')
 

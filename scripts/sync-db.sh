@@ -72,8 +72,8 @@ START_TIME=$(date +%s)
 
 if ${SSH_CMD} "${SERVER_USER}@${SERVER_HOST}" \
     "docker compose -f ${SERVER_COMPOSE_FILE} exec -T mysql \
-     mysqldump -u iqair -p\"${SERVER_DB_PASS}\" --single-transaction --routines --triggers --no-tablespaces iqair_workbench" \
-    | mysql -h "${LOCAL_DB_HOST}" -P "${LOCAL_DB_PORT}" -u root -p"${LOCAL_ROOT_PASS}" "${LOCAL_DB_NAME}" 2>/tmp/mysql_import_err.log; then
+     mysqldump -u iqair -p\"${SERVER_DB_PASS}\" --default-character-set=utf8mb4 --single-transaction --routines --triggers --no-tablespaces iqair_workbench" \
+    | mysql -h "${LOCAL_DB_HOST}" -P "${LOCAL_DB_PORT}" -u root -p"${LOCAL_ROOT_PASS}" --default-character-set=utf8mb4 "${LOCAL_DB_NAME}" 2>/tmp/mysql_import_err.log; then
     
     ELAPSED=$(($(date +%s) - START_TIME))
     log "数据库同步成功 (耗时 ${ELAPSED}s)"

@@ -6,7 +6,9 @@ class ProjectSerializer(serializers.ModelSerializer):
     class Meta:
         model = Project
         fields = ['id', 'name', 'description', 'icon',
-                  'route', 'thumbnail', 'is_active', 'sort_order', 'created_at', 'updated_at']
+                  'route', 'thumbnail', 'is_featured', 'gradient_color',
+                  'subtitle', 'icon_type', 'icon_emoji',
+                  'is_active', 'sort_order', 'created_at', 'updated_at']
         read_only_fields = ['id', 'created_at', 'updated_at']
 
 
@@ -16,4 +18,6 @@ class ProjectListSerializer(serializers.ModelSerializer):
     class Meta:
         model = Project
         fields = ['id', 'name', 'description', 'icon',
-                  'route', 'thumbnail', 'is_active', 'sort_order']
+                  'route', 'thumbnail', 'is_featured', 'gradient_color',
+                  'subtitle', 'icon_type', 'icon_emoji',
+                  'is_active', 'sort_order']

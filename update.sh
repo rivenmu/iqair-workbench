@@ -42,7 +42,7 @@ fi
 echo "[1/6] 备份数据库..."
 BACKUP_FILE="$BACKUP_DIR/backup_$(date +%Y%m%d_%H%M%S).sql"
 if docker compose ps mysql | grep -q "Up"; then
-    docker compose exec mysql mysqldump -u iqair -pIqAir@2026Riven! iqair_workbench > "$BACKUP_FILE" 2>/dev/null
+    docker compose exec mysql mysqldump -u iqair -pIqAir@2026Riven! --default-character-set=utf8mb4 iqair_workbench > "$BACKUP_FILE" 2>/dev/null
     if [ -f "$BACKUP_FILE" ] && [ -s "$BACKUP_FILE" ]; then
         echo "      ✓ 数据库备份成功: $BACKUP_FILE"
     else
