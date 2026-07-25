@@ -1,7 +1,6 @@
 from django.contrib import admin
-
-from .models import Brand, FilterRevenue, UIText
-
+from .models import Brand, FilterRevenue, UIText, PlatformSalesData
+from .models_cloudword import CloudWord
 
 @admin.register(Brand)
 class BrandAdmin(admin.ModelAdmin):
@@ -10,19 +9,19 @@ class BrandAdmin(admin.ModelAdmin):
     search_fields = ('name',)
     ordering = ('sort_order',)
 
-    def get_model_perms(self, request):
-        return {}
-
+@admin.register(CloudWord)
+class CloudWordAdmin(admin.ModelAdmin):
+    list_display = ('cn_text', 'en_text', 'weight', 'is_active', 'created_at')
+    list_filter = ('is_active',)
+    search_fields = ('cn_text', 'en_text')
+    list_editable = ('weight', 'is_active')
+    ordering = ('-weight',)
 
 @admin.register(FilterRevenue)
 class FilterRevenueAdmin(admin.ModelAdmin):
     list_display = ('brand', 'period', 'revenue', 'filter_percentage', 'created_at')
     list_filter = ('brand', 'period')
     ordering = ('-period',)
-
-    def get_model_perms(self, request):
-        return {}
-
 
 @admin.register(UIText)
 class UITextAdmin(admin.ModelAdmin):
@@ -31,5 +30,11 @@ class UITextAdmin(admin.ModelAdmin):
     search_fields = ('key', 'value')
     ordering = ('project', 'key')
 
-    def get_model_perms(self, request):
-        return {}
+@admin.register(PlatformSalesData)
+class PlatformSalesDataAdmin(admin.ModelAdmin):
+    list_display = ('platform', 'period_type', 'date', 'sales_amount', 'order_count', 'created_at')
+    list_filter = ('platform', 'period_type')
+    search_fields = ('date',)
+    date_hierarchy = 'date'
+    ordering = ('-date',)
+    list_per_page = 50

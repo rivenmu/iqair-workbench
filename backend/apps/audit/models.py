@@ -2,13 +2,7 @@ from django.db import models
 
 
 class OperationLog(models.Model):
-    """
-    操作审计日志
-    保留策略：
-    - 7天内：完整保留
-    - 7-90天：每天只保留最后一条记录
-    - 超过90天：自动删除
-    """
+    """操作审计日志 — 保留策略: 7天内完整保留, 7-90天每日一条, >90天自动删除"""
     user = models.ForeignKey('accounts.User', on_delete=models.SET_NULL, null=True, related_name='operation_logs', verbose_name='操作人')
     action = models.CharField(max_length=50, verbose_name='操作类型')
     module = models.CharField(max_length=50, verbose_name='操作模块')
@@ -23,6 +17,10 @@ class OperationLog(models.Model):
         verbose_name = '操作日志'
         verbose_name_plural = verbose_name
         ordering = ['-timestamp']
+        indexes = [
+            models.Index(fields=['user', 'timestamp'], name='oplog_user_ts_idx'),
+            models.Index(fields=['module', 'timestamp'], name='oplog_module_ts_idx'),
+        ]
 
     def __str__(self):
         username = self.user.username if self.user else 'unknown'

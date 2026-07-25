@@ -1,35 +1,31 @@
+"""Dashboard data service with atomic upsert pattern."""
 from decimal import Decimal
 from django.db import transaction
 
 from apps.dashboard.models import Brand, FilterRevenue, UIText
 from apps.projects.models import Project
 from apps.snapshots.services import SnapshotService
+from utils.exceptions import BusinessError, ConflictError
 
 
 class DashboardService:
-    """看板数据服务层 - 处理数据聚合和批量更新"""
+    """Dashboard data aggregation and atomic batch update."""
 
     @staticmethod
     def get_dashboard_data(project_id):
-        """
-        获取完整看板数据，返回前端渲染所需的聚合格式
-        """
-        brands = Brand.objects.filter(project_id=project_id).prefetch_related('revenues').order_by('sort_order')
+        """Return aggregated dashboard data for frontend rendering."""
+        brands = Brand.objects.filter(project_id=project_id)\
+            .prefetch_related('revenues').order_by('sort_order')
 
-        # 收集所有期间
         periods_set = set()
         brands_data = []
 
         for brand in brands:
             revenues = brand.revenues.all().order_by('period')
-            periods_set.update([r.period for r in revenues])
+            periods_set.update(r.period for r in revenues)
 
-            # 按期间顺序整理营收数据
-            rev_data = []
-            pct_data = []
-            for rev in revenues:
-                rev_data.append(float(rev.revenue))
-                pct_data.append(float(rev.filter_percentage))
+            rev_data = [float(r.revenue) for r in revenues]
+            pct_data = [float(r.filter_percentage) for r in revenues]
 
             brands_data.append({
                 'id': brand.id,
@@ -38,12 +34,11 @@ class DashboardService:
                 'logo': brand.logo,
                 'filterRev': rev_data,
                 'filterPct': pct_data,
-                'sort_order': brand.sort_order
+                'sort_order': brand.sort_order,
+                'updated_at': brand.updated_at.isoformat() if brand.updated_at else None,
             })
 
         periods = sorted(periods_set)
-
-        # 加载该项目的 UI 文本
         ui_texts = {
             t.key: t.value
             for t in UIText.objects.filter(project_id=project_id)
@@ -59,30 +54,41 @@ class DashboardService:
     @staticmethod
     @transaction.atomic
     def save_dashboard_data(project_id, data, user):
-        """
-        批量保存看板数据
-        数据格式：{ periods: [], brands: [{ name, color, logo, filterRev: [], filterPct: [] }], uiTexts: {} }
-        """
+        """Atomic upsert: diff old/new data, apply only changes within a transaction."""
         project = Project.objects.get(id=project_id)
-
-        # 创建修改前快照
         old_data = DashboardService.get_dashboard_data(project_id)
+
+        # Conflict detection
+        loaded_at = data.get('_loaded_at')
+        if loaded_at:
+            for brand in Brand.objects.filter(project_id=project_id):
+                if brand.updated_at and brand.updated_at.isoformat() > loaded_at:
+                    raise ConflictError(
+                        f'Brand "{brand.name}" was modified by another user. '
+                        'Please refresh and try again.'
+                    )
+
+        # Snapshot old data before mutation
         SnapshotService.create_snapshot(project_id, user.id, old_data, 'update')
 
-        # 清除旧数据
-        Brand.objects.filter(project_id=project_id).delete()
-
-        # 批量创建新数据
         periods = data.get('periods', [])
         brands_data = data.get('brands', [])
+        incoming_names = {b['name'] for b in brands_data}
+        incoming_brand_ids = {b.get('id') for b in brands_data if b.get('id')}
 
+        # Delete brands not in incoming data
+        Brand.objects.filter(project_id=project_id).exclude(name__in=incoming_names).delete()
+
+        # Upsert brands
         for idx, brand_data in enumerate(brands_data):
-            brand = Brand.objects.create(
+            brand, _created = Brand.objects.update_or_create(
                 project=project,
                 name=brand_data['name'],
-                color=brand_data.get('color', '#64748B'),
-                logo=brand_data.get('logo', ''),
-                sort_order=idx
+                defaults={
+                    'color': brand_data.get('color', '#64748B'),
+                    'logo': brand_data.get('logo', ''),
+                    'sort_order': idx,
+                }
             )
 
             rev_list = brand_data.get('filterRev', [])
@@ -90,14 +96,19 @@ class DashboardService:
 
             for i, period in enumerate(periods):
                 if i < len(rev_list) and i < len(pct_list):
-                    FilterRevenue.objects.create(
+                    FilterRevenue.objects.update_or_create(
                         brand=brand,
                         period=period,
-                        revenue=Decimal(str(rev_list[i])),
-                        filter_percentage=Decimal(str(pct_list[i]))
+                        defaults={
+                            'revenue': Decimal(str(rev_list[i])),
+                            'filter_percentage': Decimal(str(pct_list[i])),
+                        }
                     )
 
-        # 持久化 UI 文本（upsert）
+            # Remove revenues for periods not in the new periods list
+            FilterRevenue.objects.filter(brand=brand).exclude(period__in=periods).delete()
+
+        # Upsert UI texts
         ui_texts = data.get('uiTexts', {}) or {}
         if isinstance(ui_texts, dict):
             for key, value in ui_texts.items():
@@ -112,9 +123,7 @@ class DashboardService:
     @staticmethod
     @transaction.atomic
     def save_ui_texts(project_id, ui_texts):
-        """
-        单独保存 UI 文本（用于轻量更新场景，避免触发全量品牌数据写入）
-        """
+        """Lightweight UI-text-only save."""
         project = Project.objects.get(id=project_id)
         if not isinstance(ui_texts, dict):
             return False

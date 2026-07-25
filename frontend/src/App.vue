@@ -1,6 +1,6 @@
 <template>
   <router-view v-slot="{ Component }">
-    <transition name="fade" mode="out-in">
+    <transition name="page-fade" mode="out-in">
       <component :is="Component" />
     </transition>
   </router-view>
@@ -9,5 +9,13 @@
 <script setup lang="ts">
 </script>
 
-<style scoped>
+<style>
+.page-fade-enter-active,
+.page-fade-leave-active {
+  transition: opacity 150ms var(--ease-out, cubic-bezier(0, 0, 0.2, 1));
+}
+.page-fade-enter-from,
+.page-fade-leave-to {
+  opacity: 0;
+}
 </style>

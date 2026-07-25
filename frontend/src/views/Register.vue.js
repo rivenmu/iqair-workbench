@@ -2,6 +2,7 @@ import { ref, reactive } from 'vue';
 import { useRouter } from 'vue-router';
 import { User, Lock, Message, Phone, WarningFilled, CircleCheckFilled, DataLine } from '@element-plus/icons-vue';
 import { authApi } from '@/api/auth';
+import BlobBackground from '@/components/BlobBackground.vue';
 const router = useRouter();
 const loading = ref(false);
 const showError = ref(false);
@@ -9,21 +10,13 @@ const errorShown = ref(false);
 const errorMessage = ref('');
 const successShown = ref(false);
 const successMessage = ref('');
-const form = reactive({
-    username: '',
-    password: '',
-    confirmPassword: '',
-    email: '',
-    phone: ''
-});
+const form = reactive({ username: '', password: '', confirmPassword: '', email: '', phone: '' });
 function showFieldError(msg) {
     errorMessage.value = msg;
     showError.value = true;
     errorShown.value = true;
     successShown.value = false;
-    setTimeout(() => {
-        showError.value = false;
-    }, 500);
+    setTimeout(() => { showError.value = false; }, 500);
 }
 async function handleRegister() {
     errorShown.value = false;
@@ -38,34 +31,21 @@ async function handleRegister() {
     }
     loading.value = true;
     try {
-        await authApi.register({
-            username: form.username,
-            password: form.password,
-            email: form.email || undefined,
-            phone: form.phone || undefined
-        });
+        await authApi.register({ username: form.username, password: form.password, email: form.email || undefined, phone: form.phone || undefined });
         successMessage.value = '注册成功，即将跳转到登录页...';
         successShown.value = true;
         errorShown.value = false;
-        setTimeout(() => {
-            router.push({ name: 'Login' });
-        }, 1500);
+        setTimeout(() => { router.push({ name: 'Login' }); }, 1500);
     }
     catch (error) {
         const errData = error.response?.data;
         if (errData) {
-            if (errData.username) {
+            if (errData.username)
                 showFieldError(Array.isArray(errData.username) ? errData.username[0] : errData.username);
-            }
-            else if (errData.password) {
+            else if (errData.password)
                 showFieldError(Array.isArray(errData.password) ? errData.password[0] : errData.password);
-            }
-            else if (errData.email) {
-                showFieldError(Array.isArray(errData.email) ? errData.email[0] : errData.email);
-            }
-            else {
+            else
                 showFieldError(errData.detail || '注册失败，请稍后重试');
-            }
         }
         else {
             showFieldError('网络异常，请稍后重试');
@@ -75,9 +55,7 @@ async function handleRegister() {
         loading.value = false;
     }
 }
-function goLogin() {
-    router.push({ name: 'Login' });
-}
+function goLogin() { router.push({ name: 'Login' }); }
 debugger; /* PartiallyEnd: #3632/scriptSetup.vue */
 const __VLS_ctx = {};
 let __VLS_components;
@@ -87,18 +65,10 @@ let __VLS_directives;
 __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
     ...{ class: "register-container" },
 });
-__VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
-    ...{ class: "background-decoration" },
-});
-__VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
-    ...{ class: "blob blob-1" },
-});
-__VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
-    ...{ class: "blob blob-2" },
-});
-__VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
-    ...{ class: "blob blob-3" },
-});
+/** @type {[typeof BlobBackground, ]} */ ;
+// @ts-ignore
+const __VLS_0 = __VLS_asFunctionalComponent(BlobBackground, new BlobBackground({}));
+const __VLS_1 = __VLS_0({}, ...__VLS_functionalComponentArgsRest(__VLS_0));
 __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
     ...{ class: "register-card" },
     ...{ class: ({ 'shake-error': __VLS_ctx.showError }) },
@@ -109,24 +79,24 @@ __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.d
 __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
     ...{ class: "logo-icon" },
 });
-const __VLS_0 = {}.ElIcon;
+const __VLS_3 = {}.ElIcon;
 /** @type {[typeof __VLS_components.ElIcon, typeof __VLS_components.elIcon, typeof __VLS_components.ElIcon, typeof __VLS_components.elIcon, ]} */ ;
 // @ts-ignore
-const __VLS_1 = __VLS_asFunctionalComponent(__VLS_0, new __VLS_0({
+const __VLS_4 = __VLS_asFunctionalComponent(__VLS_3, new __VLS_3({
     size: "40",
     color: "#007AFF",
 }));
-const __VLS_2 = __VLS_1({
+const __VLS_5 = __VLS_4({
     size: "40",
     color: "#007AFF",
-}, ...__VLS_functionalComponentArgsRest(__VLS_1));
-__VLS_3.slots.default;
-const __VLS_4 = {}.DataLine;
+}, ...__VLS_functionalComponentArgsRest(__VLS_4));
+__VLS_6.slots.default;
+const __VLS_7 = {}.DataLine;
 /** @type {[typeof __VLS_components.DataLine, ]} */ ;
 // @ts-ignore
-const __VLS_5 = __VLS_asFunctionalComponent(__VLS_4, new __VLS_4({}));
-const __VLS_6 = __VLS_5({}, ...__VLS_functionalComponentArgsRest(__VLS_5));
-var __VLS_3;
+const __VLS_8 = __VLS_asFunctionalComponent(__VLS_7, new __VLS_7({}));
+const __VLS_9 = __VLS_8({}, ...__VLS_functionalComponentArgsRest(__VLS_8));
+var __VLS_6;
 __VLS_asFunctionalElement(__VLS_intrinsicElements.h1, __VLS_intrinsicElements.h1)({
     ...{ class: "title" },
 });
@@ -140,10 +110,10 @@ __VLS_asFunctionalElement(__VLS_intrinsicElements.form, __VLS_intrinsicElements.
 __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
     ...{ class: "input-group" },
 });
-const __VLS_8 = {}.ElInput;
+const __VLS_11 = {}.ElInput;
 /** @type {[typeof __VLS_components.ElInput, typeof __VLS_components.elInput, ]} */ ;
 // @ts-ignore
-const __VLS_9 = __VLS_asFunctionalComponent(__VLS_8, new __VLS_8({
+const __VLS_12 = __VLS_asFunctionalComponent(__VLS_11, new __VLS_11({
     ...{ 'onKeyup': {} },
     modelValue: (__VLS_ctx.form.username),
     size: "large",
@@ -151,28 +121,28 @@ const __VLS_9 = __VLS_asFunctionalComponent(__VLS_8, new __VLS_8({
     prefixIcon: (__VLS_ctx.User),
     clearable: true,
 }));
-const __VLS_10 = __VLS_9({
+const __VLS_13 = __VLS_12({
     ...{ 'onKeyup': {} },
     modelValue: (__VLS_ctx.form.username),
     size: "large",
     placeholder: "用户名",
     prefixIcon: (__VLS_ctx.User),
     clearable: true,
-}, ...__VLS_functionalComponentArgsRest(__VLS_9));
-let __VLS_12;
-let __VLS_13;
-let __VLS_14;
-const __VLS_15 = {
+}, ...__VLS_functionalComponentArgsRest(__VLS_12));
+let __VLS_15;
+let __VLS_16;
+let __VLS_17;
+const __VLS_18 = {
     onKeyup: (__VLS_ctx.handleRegister)
 };
-var __VLS_11;
+var __VLS_14;
 __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
     ...{ class: "input-group" },
 });
-const __VLS_16 = {}.ElInput;
+const __VLS_19 = {}.ElInput;
 /** @type {[typeof __VLS_components.ElInput, typeof __VLS_components.elInput, ]} */ ;
 // @ts-ignore
-const __VLS_17 = __VLS_asFunctionalComponent(__VLS_16, new __VLS_16({
+const __VLS_20 = __VLS_asFunctionalComponent(__VLS_19, new __VLS_19({
     ...{ 'onKeyup': {} },
     modelValue: (__VLS_ctx.form.password),
     type: "password",
@@ -181,7 +151,7 @@ const __VLS_17 = __VLS_asFunctionalComponent(__VLS_16, new __VLS_16({
     prefixIcon: (__VLS_ctx.Lock),
     showPassword: true,
 }));
-const __VLS_18 = __VLS_17({
+const __VLS_21 = __VLS_20({
     ...{ 'onKeyup': {} },
     modelValue: (__VLS_ctx.form.password),
     type: "password",
@@ -189,21 +159,21 @@ const __VLS_18 = __VLS_17({
     placeholder: "密码",
     prefixIcon: (__VLS_ctx.Lock),
     showPassword: true,
-}, ...__VLS_functionalComponentArgsRest(__VLS_17));
-let __VLS_20;
-let __VLS_21;
-let __VLS_22;
-const __VLS_23 = {
+}, ...__VLS_functionalComponentArgsRest(__VLS_20));
+let __VLS_23;
+let __VLS_24;
+let __VLS_25;
+const __VLS_26 = {
     onKeyup: (__VLS_ctx.handleRegister)
 };
-var __VLS_19;
+var __VLS_22;
 __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
     ...{ class: "input-group" },
 });
-const __VLS_24 = {}.ElInput;
+const __VLS_27 = {}.ElInput;
 /** @type {[typeof __VLS_components.ElInput, typeof __VLS_components.elInput, ]} */ ;
 // @ts-ignore
-const __VLS_25 = __VLS_asFunctionalComponent(__VLS_24, new __VLS_24({
+const __VLS_28 = __VLS_asFunctionalComponent(__VLS_27, new __VLS_27({
     ...{ 'onKeyup': {} },
     modelValue: (__VLS_ctx.form.confirmPassword),
     type: "password",
@@ -212,7 +182,7 @@ const __VLS_25 = __VLS_asFunctionalComponent(__VLS_24, new __VLS_24({
     prefixIcon: (__VLS_ctx.Lock),
     showPassword: true,
 }));
-const __VLS_26 = __VLS_25({
+const __VLS_29 = __VLS_28({
     ...{ 'onKeyup': {} },
     modelValue: (__VLS_ctx.form.confirmPassword),
     type: "password",
@@ -220,21 +190,21 @@ const __VLS_26 = __VLS_25({
     placeholder: "确认密码",
     prefixIcon: (__VLS_ctx.Lock),
     showPassword: true,
-}, ...__VLS_functionalComponentArgsRest(__VLS_25));
-let __VLS_28;
-let __VLS_29;
-let __VLS_30;
-const __VLS_31 = {
+}, ...__VLS_functionalComponentArgsRest(__VLS_28));
+let __VLS_31;
+let __VLS_32;
+let __VLS_33;
+const __VLS_34 = {
     onKeyup: (__VLS_ctx.handleRegister)
 };
-var __VLS_27;
+var __VLS_30;
 __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
     ...{ class: "input-group" },
 });
-const __VLS_32 = {}.ElInput;
+const __VLS_35 = {}.ElInput;
 /** @type {[typeof __VLS_components.ElInput, typeof __VLS_components.elInput, ]} */ ;
 // @ts-ignore
-const __VLS_33 = __VLS_asFunctionalComponent(__VLS_32, new __VLS_32({
+const __VLS_36 = __VLS_asFunctionalComponent(__VLS_35, new __VLS_35({
     ...{ 'onKeyup': {} },
     modelValue: (__VLS_ctx.form.email),
     size: "large",
@@ -242,28 +212,28 @@ const __VLS_33 = __VLS_asFunctionalComponent(__VLS_32, new __VLS_32({
     prefixIcon: (__VLS_ctx.Message),
     clearable: true,
 }));
-const __VLS_34 = __VLS_33({
+const __VLS_37 = __VLS_36({
     ...{ 'onKeyup': {} },
     modelValue: (__VLS_ctx.form.email),
     size: "large",
     placeholder: "邮箱（选填）",
     prefixIcon: (__VLS_ctx.Message),
     clearable: true,
-}, ...__VLS_functionalComponentArgsRest(__VLS_33));
-let __VLS_36;
-let __VLS_37;
-let __VLS_38;
-const __VLS_39 = {
+}, ...__VLS_functionalComponentArgsRest(__VLS_36));
+let __VLS_39;
+let __VLS_40;
+let __VLS_41;
+const __VLS_42 = {
     onKeyup: (__VLS_ctx.handleRegister)
 };
-var __VLS_35;
+var __VLS_38;
 __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
     ...{ class: "input-group" },
 });
-const __VLS_40 = {}.ElInput;
+const __VLS_43 = {}.ElInput;
 /** @type {[typeof __VLS_components.ElInput, typeof __VLS_components.elInput, ]} */ ;
 // @ts-ignore
-const __VLS_41 = __VLS_asFunctionalComponent(__VLS_40, new __VLS_40({
+const __VLS_44 = __VLS_asFunctionalComponent(__VLS_43, new __VLS_43({
     ...{ 'onKeyup': {} },
     modelValue: (__VLS_ctx.form.phone),
     size: "large",
@@ -271,105 +241,105 @@ const __VLS_41 = __VLS_asFunctionalComponent(__VLS_40, new __VLS_40({
     prefixIcon: (__VLS_ctx.Phone),
     clearable: true,
 }));
-const __VLS_42 = __VLS_41({
+const __VLS_45 = __VLS_44({
     ...{ 'onKeyup': {} },
     modelValue: (__VLS_ctx.form.phone),
     size: "large",
     placeholder: "手机号（选填）",
     prefixIcon: (__VLS_ctx.Phone),
     clearable: true,
-}, ...__VLS_functionalComponentArgsRest(__VLS_41));
-let __VLS_44;
-let __VLS_45;
-let __VLS_46;
-const __VLS_47 = {
+}, ...__VLS_functionalComponentArgsRest(__VLS_44));
+let __VLS_47;
+let __VLS_48;
+let __VLS_49;
+const __VLS_50 = {
     onKeyup: (__VLS_ctx.handleRegister)
 };
-var __VLS_43;
-const __VLS_48 = {}.ElButton;
+var __VLS_46;
+const __VLS_51 = {}.ElButton;
 /** @type {[typeof __VLS_components.ElButton, typeof __VLS_components.elButton, typeof __VLS_components.ElButton, typeof __VLS_components.elButton, ]} */ ;
 // @ts-ignore
-const __VLS_49 = __VLS_asFunctionalComponent(__VLS_48, new __VLS_48({
+const __VLS_52 = __VLS_asFunctionalComponent(__VLS_51, new __VLS_51({
     ...{ 'onClick': {} },
     type: "primary",
     size: "large",
     ...{ class: "register-button" },
     loading: (__VLS_ctx.loading),
 }));
-const __VLS_50 = __VLS_49({
+const __VLS_53 = __VLS_52({
     ...{ 'onClick': {} },
     type: "primary",
     size: "large",
     ...{ class: "register-button" },
     loading: (__VLS_ctx.loading),
-}, ...__VLS_functionalComponentArgsRest(__VLS_49));
-let __VLS_52;
-let __VLS_53;
-let __VLS_54;
-const __VLS_55 = {
+}, ...__VLS_functionalComponentArgsRest(__VLS_52));
+let __VLS_55;
+let __VLS_56;
+let __VLS_57;
+const __VLS_58 = {
     onClick: (__VLS_ctx.handleRegister)
 };
-__VLS_51.slots.default;
+__VLS_54.slots.default;
 (__VLS_ctx.loading ? '注册中...' : '注 册');
-var __VLS_51;
-const __VLS_56 = {}.transition;
+var __VLS_54;
+const __VLS_59 = {}.transition;
 /** @type {[typeof __VLS_components.Transition, typeof __VLS_components.transition, typeof __VLS_components.Transition, typeof __VLS_components.transition, ]} */ ;
 // @ts-ignore
-const __VLS_57 = __VLS_asFunctionalComponent(__VLS_56, new __VLS_56({
+const __VLS_60 = __VLS_asFunctionalComponent(__VLS_59, new __VLS_59({
     name: "fade",
 }));
-const __VLS_58 = __VLS_57({
+const __VLS_61 = __VLS_60({
     name: "fade",
-}, ...__VLS_functionalComponentArgsRest(__VLS_57));
-__VLS_59.slots.default;
+}, ...__VLS_functionalComponentArgsRest(__VLS_60));
+__VLS_62.slots.default;
 if (__VLS_ctx.errorShown) {
     __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
         ...{ class: "error-message" },
     });
-    const __VLS_60 = {}.ElIcon;
+    const __VLS_63 = {}.ElIcon;
     /** @type {[typeof __VLS_components.ElIcon, typeof __VLS_components.elIcon, typeof __VLS_components.ElIcon, typeof __VLS_components.elIcon, ]} */ ;
     // @ts-ignore
-    const __VLS_61 = __VLS_asFunctionalComponent(__VLS_60, new __VLS_60({}));
-    const __VLS_62 = __VLS_61({}, ...__VLS_functionalComponentArgsRest(__VLS_61));
-    __VLS_63.slots.default;
-    const __VLS_64 = {}.WarningFilled;
+    const __VLS_64 = __VLS_asFunctionalComponent(__VLS_63, new __VLS_63({}));
+    const __VLS_65 = __VLS_64({}, ...__VLS_functionalComponentArgsRest(__VLS_64));
+    __VLS_66.slots.default;
+    const __VLS_67 = {}.WarningFilled;
     /** @type {[typeof __VLS_components.WarningFilled, ]} */ ;
     // @ts-ignore
-    const __VLS_65 = __VLS_asFunctionalComponent(__VLS_64, new __VLS_64({}));
-    const __VLS_66 = __VLS_65({}, ...__VLS_functionalComponentArgsRest(__VLS_65));
-    var __VLS_63;
+    const __VLS_68 = __VLS_asFunctionalComponent(__VLS_67, new __VLS_67({}));
+    const __VLS_69 = __VLS_68({}, ...__VLS_functionalComponentArgsRest(__VLS_68));
+    var __VLS_66;
     (__VLS_ctx.errorMessage);
 }
-var __VLS_59;
-const __VLS_68 = {}.transition;
+var __VLS_62;
+const __VLS_71 = {}.transition;
 /** @type {[typeof __VLS_components.Transition, typeof __VLS_components.transition, typeof __VLS_components.Transition, typeof __VLS_components.transition, ]} */ ;
 // @ts-ignore
-const __VLS_69 = __VLS_asFunctionalComponent(__VLS_68, new __VLS_68({
+const __VLS_72 = __VLS_asFunctionalComponent(__VLS_71, new __VLS_71({
     name: "fade",
 }));
-const __VLS_70 = __VLS_69({
+const __VLS_73 = __VLS_72({
     name: "fade",
-}, ...__VLS_functionalComponentArgsRest(__VLS_69));
-__VLS_71.slots.default;
+}, ...__VLS_functionalComponentArgsRest(__VLS_72));
+__VLS_74.slots.default;
 if (__VLS_ctx.successShown) {
     __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
         ...{ class: "success-message" },
     });
-    const __VLS_72 = {}.ElIcon;
+    const __VLS_75 = {}.ElIcon;
     /** @type {[typeof __VLS_components.ElIcon, typeof __VLS_components.elIcon, typeof __VLS_components.ElIcon, typeof __VLS_components.elIcon, ]} */ ;
     // @ts-ignore
-    const __VLS_73 = __VLS_asFunctionalComponent(__VLS_72, new __VLS_72({}));
-    const __VLS_74 = __VLS_73({}, ...__VLS_functionalComponentArgsRest(__VLS_73));
-    __VLS_75.slots.default;
-    const __VLS_76 = {}.CircleCheckFilled;
+    const __VLS_76 = __VLS_asFunctionalComponent(__VLS_75, new __VLS_75({}));
+    const __VLS_77 = __VLS_76({}, ...__VLS_functionalComponentArgsRest(__VLS_76));
+    __VLS_78.slots.default;
+    const __VLS_79 = {}.CircleCheckFilled;
     /** @type {[typeof __VLS_components.CircleCheckFilled, ]} */ ;
     // @ts-ignore
-    const __VLS_77 = __VLS_asFunctionalComponent(__VLS_76, new __VLS_76({}));
-    const __VLS_78 = __VLS_77({}, ...__VLS_functionalComponentArgsRest(__VLS_77));
-    var __VLS_75;
+    const __VLS_80 = __VLS_asFunctionalComponent(__VLS_79, new __VLS_79({}));
+    const __VLS_81 = __VLS_80({}, ...__VLS_functionalComponentArgsRest(__VLS_80));
+    var __VLS_78;
     (__VLS_ctx.successMessage);
 }
-var __VLS_71;
+var __VLS_74;
 __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
     ...{ class: "footer-hint" },
 });
@@ -379,13 +349,6 @@ __VLS_asFunctionalElement(__VLS_intrinsicElements.a, __VLS_intrinsicElements.a)(
     ...{ class: "login-link" },
 });
 /** @type {__VLS_StyleScopedClasses['register-container']} */ ;
-/** @type {__VLS_StyleScopedClasses['background-decoration']} */ ;
-/** @type {__VLS_StyleScopedClasses['blob']} */ ;
-/** @type {__VLS_StyleScopedClasses['blob-1']} */ ;
-/** @type {__VLS_StyleScopedClasses['blob']} */ ;
-/** @type {__VLS_StyleScopedClasses['blob-2']} */ ;
-/** @type {__VLS_StyleScopedClasses['blob']} */ ;
-/** @type {__VLS_StyleScopedClasses['blob-3']} */ ;
 /** @type {__VLS_StyleScopedClasses['register-card']} */ ;
 /** @type {__VLS_StyleScopedClasses['logo-section']} */ ;
 /** @type {__VLS_StyleScopedClasses['logo-icon']} */ ;
@@ -413,6 +376,7 @@ const __VLS_self = (await import('vue')).defineComponent({
             WarningFilled: WarningFilled,
             CircleCheckFilled: CircleCheckFilled,
             DataLine: DataLine,
+            BlobBackground: BlobBackground,
             loading: loading,
             showError: showError,
             errorShown: errorShown,

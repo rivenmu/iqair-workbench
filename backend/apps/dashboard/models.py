@@ -1,5 +1,4 @@
 from django.db import models
-
 from apps.projects.models import Project
 
 
@@ -15,7 +14,6 @@ class PeriodType(models.TextChoices):
 
 
 class Brand(models.Model):
-    """品牌信息（IQAir 及竞品）"""
     project = models.ForeignKey(Project, on_delete=models.CASCADE, related_name='brands', verbose_name='所属项目')
     name = models.CharField(max_length=100, verbose_name='品牌名称')
     color = models.CharField(max_length=20, default='#64748B', verbose_name='图表颜色')
@@ -36,10 +34,6 @@ class Brand(models.Model):
 
 
 class FilterRevenue(models.Model):
-    """
-    滤芯营收数据
-    每条记录对应：某品牌 + 某年份期间 + 营收金额 + 占比
-    """
     brand = models.ForeignKey(Brand, on_delete=models.CASCADE, related_name='revenues', verbose_name='品牌')
     period = models.CharField(max_length=20, verbose_name='期间 (如 2024 H1)')
     revenue = models.DecimalField(max_digits=14, decimal_places=2, verbose_name='销售额 (元)')
@@ -53,20 +47,16 @@ class FilterRevenue(models.Model):
         verbose_name_plural = verbose_name
         ordering = ['period', '-revenue']
         unique_together = ['brand', 'period']
+        indexes = [
+            models.Index(fields=['brand', 'period'], name='filterrev_brand_period_idx'),
+        ]
 
     def __str__(self):
-        return f'{self.brand.name} - {self.period} - {self.revenue}'
+        return f'{self.brand.name} - {self.period}'
 
 
 class UIText(models.Model):
-    """
-    看板 UI 文本（标题、表头等可编辑文案）
-    按 (project, key) 唯一存储，支持多语言切换、跨环境/跨域名共享。
-    """
-    project = models.ForeignKey(
-        Project, on_delete=models.CASCADE,
-        related_name='ui_texts', verbose_name='所属项目'
-    )
+    project = models.ForeignKey(Project, on_delete=models.CASCADE, related_name='ui_texts', verbose_name='所属项目')
     key = models.CharField(max_length=100, verbose_name='文本键 (如 mainTitle/thSales)')
     value = models.TextField(blank=True, default='', verbose_name='文本内容')
     updated_at = models.DateTimeField(auto_now=True, verbose_name='更新时间')
@@ -83,16 +73,10 @@ class UIText(models.Model):
 
 
 class PlatformSalesData(models.Model):
-    """电商平台销售数据（天猫生意参谋 / 京东商智品牌纵横）"""
-    platform = models.CharField(
-        max_length=10, choices=Platform.choices, verbose_name='平台'
-    )
-    period_type = models.CharField(
-        max_length=10, choices=PeriodType.choices, verbose_name='周期类型'
-    )
+    platform = models.CharField(max_length=10, choices=Platform.choices, verbose_name='平台')
+    period_type = models.CharField(max_length=10, choices=PeriodType.choices, verbose_name='周期类型')
     date = models.DateField(verbose_name='数据日期')
     period_label = models.CharField(max_length=30, blank=True, default='', verbose_name='期间标签 (如 2026-W28)')
-
     sales_amount = models.DecimalField(max_digits=14, decimal_places=2, default=0, verbose_name='销售额 (元)')
     order_count = models.IntegerField(default=0, verbose_name='订单数')
     visitor_count = models.IntegerField(default=0, verbose_name='访客数')
@@ -101,11 +85,7 @@ class PlatformSalesData(models.Model):
     unit_price = models.DecimalField(max_digits=10, decimal_places=2, default=0, verbose_name='客单价 (元)')
     cart_count = models.IntegerField(default=0, verbose_name='加购人数')
     favorite_count = models.IntegerField(default=0, verbose_name='收藏人数')
-
-    uploaded_by = models.ForeignKey(
-        'accounts.User', on_delete=models.SET_NULL, null=True, blank=True,
-        verbose_name='上传者'
-    )
+    uploaded_by = models.ForeignKey('accounts.User', on_delete=models.SET_NULL, null=True, blank=True, verbose_name='上传者')
     created_at = models.DateTimeField(auto_now_add=True, verbose_name='创建时间')
     updated_at = models.DateTimeField(auto_now=True, verbose_name='更新时间')
 
@@ -115,6 +95,19 @@ class PlatformSalesData(models.Model):
         verbose_name_plural = verbose_name
         ordering = ['-date']
         unique_together = ['platform', 'period_type', 'date']
+        indexes = [
+            models.Index(fields=['platform', 'period_type', 'date'], name='psd_pltfm_period_date_idx'),
+        ]
+
+    @property
+    def computed_period_label(self):
+        if self.period_type == 'daily':
+            return self.date.strftime('%Y-%m-%d')
+        elif self.period_type == 'weekly':
+            iso = self.date.isocalendar()
+            return f'{iso[0]}-W{iso[1]:02d}'
+        else:
+            return self.date.strftime('%Y-%m')
 
     def __str__(self):
-        return f'{self.get_platform_display()} {self.date} ({self.get_period_type_display()})'
+        return f'{self.get_platform_display()} {self.date}'

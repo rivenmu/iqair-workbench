@@ -196,17 +196,15 @@
                 <template v-for="(period, yIdx) in periods" :key="yIdx">
                   <td
                     v-if="isEditMode"
-                    contenteditable="true"
-                    class="editing-cell"
-                    @input="handleDataChange($event, brand, yIdx, 'rev')"
-                  >{{ brand.filterRev[yIdx] }}</td>
+                    class="editing-cell">
+                    <input v-model.number="brand.filterRev[yIdx]" class="cell-input" />
+                  </td>
                   <td v-else>{{ formatNum(brand.filterRev[yIdx]) }}</td>
                   <td
                     v-if="isEditMode"
-                    contenteditable="true"
-                    class="editing-cell"
-                    @input="handleDataChange($event, brand, yIdx, 'pct')"
-                  >{{ brand.filterPct[yIdx] }}</td>
+                    class="editing-cell">
+                    <input v-model.number="brand.filterPct[yIdx]" class="cell-input" />
+                  </td>
                   <td v-else>{{ brand.filterPct[yIdx] }}%</td>
                 </template>
               </tr>
@@ -319,6 +317,7 @@ const uiTexts = reactive<Record<string, string>>({
 
 const snapshotDialogVisible = ref(false)
 const showHistoryDialog = ref(false)
+const loadedAt = ref<string>('')
 const snapshotNote = ref('')
 const snapshotting = ref(false)
 
@@ -356,6 +355,7 @@ async function fetchData() {
   loading.value = true
   try {
     const data: any = await dashboardApi.getData(PROJECT_ID)
+    loadedAt.value = data._serverTime || new Date().toISOString()
     // 优先使用后端返回的 UI 文本（跨环境/跨域名共享的权威源）
     if (data.uiTexts && typeof data.uiTexts === 'object') {
       Object.keys(uiTexts).forEach((k) => { delete uiTexts[k] })
@@ -379,10 +379,11 @@ async function fetchData() {
       uiTexts.competitorDataVersion = DATA_VERSION
       await saveDataToBackend(false)
     }
+    persistToLocalStorage()
     pipelineProcessData()
     await nextTick()
     renderChart()
-  } catch (error) {
+  } catch (_error) {
     // 后端请求失败，尝试从 localStorage 加载
     loadFromLocalStorage()
   } finally {
@@ -493,18 +494,18 @@ function toggleBrandVisibility(brand: any, checked: boolean) {
 }
 
 async function saveDataToBackend(showMessage: boolean) {
-  persistToLocalStorage()
   try {
-    await dashboardApi.saveData(PROJECT_ID, {
-      periods: periods.value,
-      brands: brands.value,
-      uiTexts: { ...uiTexts }
-    })
-    if (showMessage) {
-      fetchSnapshots()
+    const payload: any = { periods: periods.value, brands: brands.value, uiTexts: { ...uiTexts } }
+    if (loadedAt.value) payload._loaded_at = loadedAt.value
+    await dashboardApi.saveData(PROJECT_ID, payload)
+    persistToLocalStorage()
+    if (showMessage) fetchSnapshots()
+  } catch (error: any) {
+    if (error?.status === 409) {
+      ElMessage.warning('数据已被他人修改，请刷新获取最新版本')
+    } else {
+      ElMessage.error('保存失败，请稍后重试')
     }
-  } catch {
-    // 后端保存失败，数据已在 localStorage
   }
 }
 
@@ -547,21 +548,8 @@ function updateBrandName(event: any, brand: any) {
 }
 
 // ================== 数据修改 ==================
-function handleDataChange(event: any, brand: any, yIdx: number, type: 'rev' | 'pct') {
-  let val = parseFloat(event.target.innerText.replace(/,/g, '').replace('%', '').trim())
-  if (isNaN(val)) val = 0
-  if (type === 'rev') {
-    brand.filterRev[yIdx] = val
-  } else {
-    brand.filterPct[yIdx] = val
-  }
-  // 防抖热重绘图表
-  if (updateTimer) clearTimeout(updateTimer)
-  updateTimer = setTimeout(() => {
-    persistToLocalStorage()
-    renderChart()
-  }, 300)
-}
+// handleDataChange removed -- replaced by v-model
+
 
 // ================== Logo 上传 ==================
 async function handleLogoUpload(file: File, brandIndex: number) {
@@ -1089,6 +1077,8 @@ watch(showHistoryDialog, (val) => {
   table-layout: fixed;
 }
 
+.cell-input { width: 100%; border: 1px solid var(--color-border-light); border-radius: 6px; padding: 4px 8px; font-size: inherit; text-align: right; background: var(--color-bg-primary); color: var(--color-text-primary); outline: none; }
+.cell-input:focus { border-color: var(--color-accent); box-shadow: 0 0 0 2px var(--color-accent-light); }
 .data-table th,
 .data-table td {
   border: 1px solid #D2D2D7;
@@ -1097,6 +1087,8 @@ watch(showHistoryDialog, (val) => {
   color: #1C1C1E;
 }
 
+.cell-input { width: 100%; border: 1px solid var(--color-border-light); border-radius: 6px; padding: 4px 8px; font-size: inherit; text-align: right; background: var(--color-bg-primary); color: var(--color-text-primary); outline: none; }
+.cell-input:focus { border-color: var(--color-accent); box-shadow: 0 0 0 2px var(--color-accent-light); }
 .data-table th {
   background: rgba(234, 242, 253, 0.85);
   font-weight: 600;
@@ -1104,6 +1096,8 @@ watch(showHistoryDialog, (val) => {
   line-height: 1.4;
 }
 
+.cell-input { width: 100%; border: 1px solid var(--color-border-light); border-radius: 6px; padding: 4px 8px; font-size: inherit; text-align: right; background: var(--color-bg-primary); color: var(--color-text-primary); outline: none; }
+.cell-input:focus { border-color: var(--color-accent); box-shadow: 0 0 0 2px var(--color-accent-light); }
 .data-table th .editable-text {
   display: inline-block;
   min-width: 20px;
@@ -1113,6 +1107,8 @@ watch(showHistoryDialog, (val) => {
   cursor: text;
 }
 
+.cell-input { width: 100%; border: 1px solid var(--color-border-light); border-radius: 6px; padding: 4px 8px; font-size: inherit; text-align: right; background: var(--color-bg-primary); color: var(--color-text-primary); outline: none; }
+.cell-input:focus { border-color: var(--color-accent); box-shadow: 0 0 0 2px var(--color-accent-light); }
 .data-table th .editable-text[contenteditable="true"] {
   padding: 2px 4px;
   border-radius: 4px;

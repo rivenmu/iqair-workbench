@@ -21,6 +21,18 @@ const sortState = reactive({
     jd: { prop: 'label', order: 'ascending' }
 });
 const hasData = computed(() => !!(tmallData.value?.records?.length || jdData.value?.records?.length));
+const tmallSummary = computed(() => {
+    if (!tmallData.value?.summary || !Object.keys(tmallData.value.summary).length) {
+        return null;
+    }
+    return tmallData.value.summary;
+});
+const jdSummary = computed(() => {
+    if (!jdData.value?.summary || !Object.keys(jdData.value.summary).length) {
+        return null;
+    }
+    return jdData.value.summary;
+});
 const overviewStats = computed(() => {
     const stats = [];
     if (tmallData.value?.summary && Object.keys(tmallData.value.summary).length) {
@@ -772,7 +784,7 @@ const __VLS_113 = __VLS_asFunctionalComponent(__VLS_112, new __VLS_112({}));
 const __VLS_114 = __VLS_113({}, ...__VLS_functionalComponentArgsRest(__VLS_113));
 var __VLS_111;
 var __VLS_103;
-if (__VLS_ctx.tmallData?.summary && Object.keys(__VLS_ctx.tmallData.summary).length) {
+if (__VLS_ctx.tmallSummary) {
     __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
         ...{ class: "summary-cards" },
     });
@@ -785,14 +797,14 @@ if (__VLS_ctx.tmallData?.summary && Object.keys(__VLS_ctx.tmallData.summary).len
     __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
         ...{ class: "summary-value" },
     });
-    (__VLS_ctx.formatNum(__VLS_ctx.tmallData.summary.total_sales));
-    if (__VLS_ctx.tmallData.summary.yoy_growth !== null) {
+    (__VLS_ctx.formatNum(__VLS_ctx.tmallSummary.total_sales));
+    if (__VLS_ctx.tmallSummary.yoy_growth !== null) {
         __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
             ...{ class: "summary-yoy" },
-            ...{ class: (__VLS_ctx.tmallData.summary.yoy_growth >= 0 ? 'pos' : 'neg') },
+            ...{ class: (__VLS_ctx.tmallSummary.yoy_growth >= 0 ? 'pos' : 'neg') },
         });
-        (__VLS_ctx.tmallData.summary.yoy_growth >= 0 ? '+' : '');
-        (__VLS_ctx.tmallData.summary.yoy_growth);
+        (__VLS_ctx.tmallSummary.yoy_growth >= 0 ? '+' : '');
+        (__VLS_ctx.tmallSummary.yoy_growth);
     }
     __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
         ...{ class: "summary-card" },
@@ -803,7 +815,7 @@ if (__VLS_ctx.tmallData?.summary && Object.keys(__VLS_ctx.tmallData.summary).len
     __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
         ...{ class: "summary-value" },
     });
-    (__VLS_ctx.formatNum(__VLS_ctx.tmallData.summary.total_orders));
+    (__VLS_ctx.formatNum(__VLS_ctx.tmallSummary.total_orders));
     __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
         ...{ class: "summary-card" },
     });
@@ -813,7 +825,7 @@ if (__VLS_ctx.tmallData?.summary && Object.keys(__VLS_ctx.tmallData.summary).len
     __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
         ...{ class: "summary-value" },
     });
-    (__VLS_ctx.formatNum(__VLS_ctx.tmallData.summary.total_visitors));
+    (__VLS_ctx.formatNum(__VLS_ctx.tmallSummary.total_visitors));
     __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
         ...{ class: "summary-card" },
     });
@@ -823,7 +835,7 @@ if (__VLS_ctx.tmallData?.summary && Object.keys(__VLS_ctx.tmallData.summary).len
     __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
         ...{ class: "summary-value" },
     });
-    (__VLS_ctx.tmallData.summary.avg_conversion);
+    (__VLS_ctx.tmallSummary.avg_conversion);
 }
 __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
     ...{ class: "table-wrapper" },
@@ -1191,7 +1203,7 @@ const __VLS_193 = __VLS_asFunctionalComponent(__VLS_192, new __VLS_192({}));
 const __VLS_194 = __VLS_193({}, ...__VLS_functionalComponentArgsRest(__VLS_193));
 var __VLS_191;
 var __VLS_183;
-if (__VLS_ctx.jdData?.summary && Object.keys(__VLS_ctx.jdData.summary).length) {
+if (__VLS_ctx.jdSummary) {
     __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
         ...{ class: "summary-cards" },
     });
@@ -1204,14 +1216,14 @@ if (__VLS_ctx.jdData?.summary && Object.keys(__VLS_ctx.jdData.summary).length) {
     __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
         ...{ class: "summary-value" },
     });
-    (__VLS_ctx.formatNum(__VLS_ctx.jdData.summary.total_sales));
-    if (__VLS_ctx.jdData.summary.yoy_growth !== null) {
+    (__VLS_ctx.formatNum(__VLS_ctx.jdSummary.total_sales));
+    if (__VLS_ctx.jdSummary.yoy_growth !== null) {
         __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
             ...{ class: "summary-yoy" },
-            ...{ class: (__VLS_ctx.jdData.summary.yoy_growth >= 0 ? 'pos' : 'neg') },
+            ...{ class: (__VLS_ctx.jdSummary.yoy_growth >= 0 ? 'pos' : 'neg') },
         });
-        (__VLS_ctx.jdData.summary.yoy_growth >= 0 ? '+' : '');
-        (__VLS_ctx.jdData.summary.yoy_growth);
+        (__VLS_ctx.jdSummary.yoy_growth >= 0 ? '+' : '');
+        (__VLS_ctx.jdSummary.yoy_growth);
     }
     __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
         ...{ class: "summary-card" },
@@ -1222,7 +1234,7 @@ if (__VLS_ctx.jdData?.summary && Object.keys(__VLS_ctx.jdData.summary).length) {
     __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
         ...{ class: "summary-value" },
     });
-    (__VLS_ctx.formatNum(__VLS_ctx.jdData.summary.total_orders));
+    (__VLS_ctx.formatNum(__VLS_ctx.jdSummary.total_orders));
     __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
         ...{ class: "summary-card" },
     });
@@ -1232,7 +1244,7 @@ if (__VLS_ctx.jdData?.summary && Object.keys(__VLS_ctx.jdData.summary).length) {
     __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
         ...{ class: "summary-value" },
     });
-    (__VLS_ctx.formatNum(__VLS_ctx.jdData.summary.total_visitors));
+    (__VLS_ctx.formatNum(__VLS_ctx.jdSummary.total_visitors));
     __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
         ...{ class: "summary-card" },
     });
@@ -1242,7 +1254,7 @@ if (__VLS_ctx.jdData?.summary && Object.keys(__VLS_ctx.jdData.summary).length) {
     __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
         ...{ class: "summary-value" },
     });
-    (__VLS_ctx.jdData.summary.avg_conversion);
+    (__VLS_ctx.jdSummary.avg_conversion);
 }
 __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
     ...{ class: "table-wrapper" },
@@ -1637,6 +1649,8 @@ const __VLS_self = (await import('vue')).defineComponent({
             tmallChartRef: tmallChartRef,
             jdChartRef: jdChartRef,
             hasData: hasData,
+            tmallSummary: tmallSummary,
+            jdSummary: jdSummary,
             overviewStats: overviewStats,
             formatNum: formatNum,
             onFilterChange: onFilterChange,

@@ -37,6 +37,7 @@ const uiTexts = reactive({
 });
 const snapshotDialogVisible = ref(false);
 const showHistoryDialog = ref(false);
+const loadedAt = ref('');
 const snapshotNote = ref('');
 const snapshotting = ref(false);
 // 默认数据
@@ -69,6 +70,7 @@ async function fetchData() {
     loading.value = true;
     try {
         const data = await dashboardApi.getData(PROJECT_ID);
+        loadedAt.value = data._serverTime || new Date().toISOString();
         // 优先使用后端返回的 UI 文本（跨环境/跨域名共享的权威源）
         if (data.uiTexts && typeof data.uiTexts === 'object') {
             Object.keys(uiTexts).forEach((k) => { delete uiTexts[k]; });
@@ -93,11 +95,12 @@ async function fetchData() {
             uiTexts.competitorDataVersion = DATA_VERSION;
             await saveDataToBackend(false);
         }
+        persistToLocalStorage();
         pipelineProcessData();
         await nextTick();
         renderChart();
     }
-    catch (error) {
+    catch (_error) {
         // 后端请求失败，尝试从 localStorage 加载
         loadFromLocalStorage();
     }
@@ -207,19 +210,22 @@ function toggleBrandVisibility(brand, checked) {
     nextTick(() => renderChart());
 }
 async function saveDataToBackend(showMessage) {
-    persistToLocalStorage();
     try {
-        await dashboardApi.saveData(PROJECT_ID, {
-            periods: periods.value,
-            brands: brands.value,
-            uiTexts: { ...uiTexts }
-        });
-        if (showMessage) {
+        const payload = { periods: periods.value, brands: brands.value, uiTexts: { ...uiTexts } };
+        if (loadedAt.value)
+            payload._loaded_at = loadedAt.value;
+        await dashboardApi.saveData(PROJECT_ID, payload);
+        persistToLocalStorage();
+        if (showMessage)
             fetchSnapshots();
-        }
     }
-    catch {
-        // 后端保存失败，数据已在 localStorage
+    catch (error) {
+        if (error?.status === 409) {
+            ElMessage.warning('数据已被他人修改，请刷新获取最新版本');
+        }
+        else {
+            ElMessage.error('保存失败，请稍后重试');
+        }
     }
 }
 // ================== UI 文本编辑 ==================
@@ -264,24 +270,7 @@ function updateBrandName(event, brand) {
     updateTimer = setTimeout(() => renderChart(), 300);
 }
 // ================== 数据修改 ==================
-function handleDataChange(event, brand, yIdx, type) {
-    let val = parseFloat(event.target.innerText.replace(/,/g, '').replace('%', '').trim());
-    if (isNaN(val))
-        val = 0;
-    if (type === 'rev') {
-        brand.filterRev[yIdx] = val;
-    }
-    else {
-        brand.filterPct[yIdx] = val;
-    }
-    // 防抖热重绘图表
-    if (updateTimer)
-        clearTimeout(updateTimer);
-    updateTimer = setTimeout(() => {
-        persistToLocalStorage();
-        renderChart();
-    }, 300);
-}
+// handleDataChange removed -- replaced by v-model
 // ================== Logo 上传 ==================
 async function handleLogoUpload(file, brandIndex) {
     const reader = new FileReader();
@@ -525,11 +514,18 @@ const __VLS_ctx = {};
 let __VLS_components;
 let __VLS_directives;
 /** @type {__VLS_StyleScopedClasses['brand-check']} */ ;
+/** @type {__VLS_StyleScopedClasses['cell-input']} */ ;
 /** @type {__VLS_StyleScopedClasses['data-table']} */ ;
 /** @type {__VLS_StyleScopedClasses['data-table']} */ ;
+/** @type {__VLS_StyleScopedClasses['cell-input']} */ ;
+/** @type {__VLS_StyleScopedClasses['cell-input']} */ ;
 /** @type {__VLS_StyleScopedClasses['data-table']} */ ;
+/** @type {__VLS_StyleScopedClasses['cell-input']} */ ;
+/** @type {__VLS_StyleScopedClasses['cell-input']} */ ;
 /** @type {__VLS_StyleScopedClasses['data-table']} */ ;
 /** @type {__VLS_StyleScopedClasses['editable-text']} */ ;
+/** @type {__VLS_StyleScopedClasses['cell-input']} */ ;
+/** @type {__VLS_StyleScopedClasses['cell-input']} */ ;
 /** @type {__VLS_StyleScopedClasses['data-table']} */ ;
 /** @type {__VLS_StyleScopedClasses['editable-text']} */ ;
 // CSS variable injection 
@@ -983,13 +979,10 @@ for (const [brand] of __VLS_getVForSourceType((__VLS_ctx.visibleBrands))) {
         (yIdx);
         if (__VLS_ctx.isEditMode) {
             __VLS_asFunctionalElement(__VLS_intrinsicElements.td, __VLS_intrinsicElements.td)({
-                ...{ onInput: (...[$event]) => {
-                        if (!(__VLS_ctx.isEditMode))
-                            return;
-                        __VLS_ctx.handleDataChange($event, brand, yIdx, 'rev');
-                    } },
-                contenteditable: "true",
                 ...{ class: "editing-cell" },
+            });
+            __VLS_asFunctionalElement(__VLS_intrinsicElements.input)({
+                ...{ class: "cell-input" },
             });
             (brand.filterRev[yIdx]);
         }
@@ -999,13 +992,10 @@ for (const [brand] of __VLS_getVForSourceType((__VLS_ctx.visibleBrands))) {
         }
         if (__VLS_ctx.isEditMode) {
             __VLS_asFunctionalElement(__VLS_intrinsicElements.td, __VLS_intrinsicElements.td)({
-                ...{ onInput: (...[$event]) => {
-                        if (!(__VLS_ctx.isEditMode))
-                            return;
-                        __VLS_ctx.handleDataChange($event, brand, yIdx, 'pct');
-                    } },
-                contenteditable: "true",
                 ...{ class: "editing-cell" },
+            });
+            __VLS_asFunctionalElement(__VLS_intrinsicElements.input)({
+                ...{ class: "cell-input" },
             });
             (brand.filterPct[yIdx]);
         }
@@ -1302,7 +1292,9 @@ var __VLS_103;
 /** @type {__VLS_StyleScopedClasses['editable-text']} */ ;
 /** @type {__VLS_StyleScopedClasses['brand-name-cell']} */ ;
 /** @type {__VLS_StyleScopedClasses['editing-cell']} */ ;
+/** @type {__VLS_StyleScopedClasses['cell-input']} */ ;
 /** @type {__VLS_StyleScopedClasses['editing-cell']} */ ;
+/** @type {__VLS_StyleScopedClasses['cell-input']} */ ;
 /** @type {__VLS_StyleScopedClasses['note-bar']} */ ;
 /** @type {__VLS_StyleScopedClasses['note-label']} */ ;
 /** @type {__VLS_StyleScopedClasses['editable-text']} */ ;
@@ -1339,7 +1331,6 @@ const __VLS_self = (await import('vue')).defineComponent({
             toggleBrandVisibility: toggleBrandVisibility,
             saveUIText: saveUIText,
             updateBrandName: updateBrandName,
-            handleDataChange: handleDataChange,
             handleLogoUpload: handleLogoUpload,
             openSnapshotDialog: openSnapshotDialog,
             handleCreateSnapshot: handleCreateSnapshot,

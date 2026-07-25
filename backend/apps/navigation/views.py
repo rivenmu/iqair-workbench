@@ -13,6 +13,7 @@ from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 
 from apps.audit.mixins import AuditLogMixin
+from tasks.favicon_task import fetch_favicon
 from apps.accounts.permissions import IsAdmin
 
 from .models import WebsiteLink, UserFavorite
@@ -107,6 +108,14 @@ class WebsiteLinkViewSet(AuditLogMixin, viewsets.ModelViewSet):
             favorite.delete()
             return Response({'is_favorited': False})
         return Response({'is_favorited': True})
+
+    @action(detail=True, methods=['post'])
+    def trigger_favicon_fetch(self, request, pk=None):
+        link = self.get_object()
+        if link.icon_image:
+            return Response({'success': True, 'message': '图标已存在'})
+        fetch_favicon.delay(link.id)
+        return Response({'success': True, 'message': '已触发异步图标抓取'})
 
     def get_serializer_class(self):
         if self.action == 'list':

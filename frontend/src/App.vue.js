@@ -17,11 +17,11 @@ var __VLS_4 = {};
     /** @type {[typeof __VLS_components.Transition, typeof __VLS_components.transition, typeof __VLS_components.Transition, typeof __VLS_components.transition, ]} */ ;
     // @ts-ignore
     const __VLS_6 = __VLS_asFunctionalComponent(__VLS_5, new __VLS_5({
-        name: "fade",
+        name: "page-fade",
         mode: "out-in",
     }));
     const __VLS_7 = __VLS_6({
-        name: "fade",
+        name: "page-fade",
         mode: "out-in",
     }, ...__VLS_functionalComponentArgsRest(__VLS_6));
     __VLS_8.slots.default;

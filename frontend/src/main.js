@@ -7,9 +7,9 @@ import zhCn from 'element-plus/es/locale/lang/zh-cn';
 import App from './App.vue';
 import router from './router';
 import './styles/global.scss';
+import './styles/animations.scss';
 import './styles/element-overrides.scss';
 const app = createApp(App);
-// 注册 Element Plus 图标
 for (const [key, component] of Object.entries(ElementPlusIconsVue)) {
     app.component(key, component);
 }

@@ -33,6 +33,12 @@ services:
     volumes:
       - ./data/redis:/data
     command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD}
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD}", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
     networks:
       - iqair-network
 
@@ -44,9 +50,10 @@ services:
       mysql:
         condition: service_healthy
       redis:
-        condition: service_started
+        condition: service_healthy
     environment:
       DJANGO_SETTINGS_MODULE: config.settings
+      DJANGO_ENV: production
       DATABASE_HOST: mysql
       DATABASE_PORT: 3306
       DATABASE_NAME: ${MYSQL_DATABASE:-iqair_workbench}
@@ -58,7 +65,6 @@ services:
       SECRET_KEY: ${DJANGO_SECRET_KEY}
       DEBUG: ${DEBUG:-False}
       ALLOWED_HOSTS: ${ALLOWED_HOSTS:-*}
-      CSRF_TRUSTED_ORIGINS: ${CSRF_TRUSTED_ORIGINS:-http://localhost:8888}
       SNAPSHOTS_DIR: /app/data/snapshots
     ports:
       - "8000:8000"
@@ -67,6 +73,12 @@ services:
       - ./data/logs/backend:/app/logs
       - ./data/media:/app/backend/media
     working_dir: /app/backend
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/health/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
     networks:
       - iqair-network
 
@@ -78,11 +90,12 @@ services:
       mysql:
         condition: service_healthy
       redis:
-        condition: service_started
+        condition: service_healthy
       backend:
         condition: service_started
     environment:
       DJANGO_SETTINGS_MODULE: config.settings
+      DJANGO_ENV: production
       DATABASE_HOST: mysql
       DATABASE_PORT: 3306
       DATABASE_NAME: ${MYSQL_DATABASE:-iqair_workbench}
@@ -109,11 +122,12 @@ services:
       mysql:
         condition: service_healthy
       redis:
-        condition: service_started
+        condition: service_healthy
       backend:
         condition: service_started
     environment:
       DJANGO_SETTINGS_MODULE: config.settings
+      DJANGO_ENV: production
       DATABASE_HOST: mysql
       DATABASE_PORT: 3306
       DATABASE_NAME: ${MYSQL_DATABASE:-iqair_workbench}
@@ -135,16 +149,17 @@ services:
   frontend:
     build:
       context: ./frontend
-      target: dev
+      target: ${FRONTEND_TARGET:-dev}
     container_name: iqair-frontend
     restart: unless-stopped
     depends_on:
-      - backend
+      backend:
+        condition: service_healthy
     environment:
       VITE_API_BASE_URL: ${VITE_API_BASE_URL:-http://localhost:8000}
-      VITE_APP_TITLE: ${VITE_APP_TITLE:-IQAir 数据分析工作台}
+      VITE_APP_TITLE: ${VITE_APP_TITLE:-IQAir}
     ports:
-      - "8888:8888"
+      - "${FRONTEND_PORT:-8888}:${FRONTEND_PORT:-8888}"
     networks:
       - iqair-network
 
