@@ -54,6 +54,21 @@
   }
   .sync-btn:hover { background: #1d4ed8; }
   .sync-btn:disabled { background: #9ca3af; cursor: not-allowed; }
+  .push-btn {
+    display: block;
+    width: 100%;
+    margin-top: 8px;
+    padding: 8px 16px;
+    background: #dc2626;
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+  }
+  .push-btn:hover { background: #b91c1c; }
+  .push-btn:disabled { background: #9ca3af; cursor: not-allowed; }
   .sync-status {
     margin-top: 8px;
     font-size: 12px;
@@ -93,6 +108,9 @@
     </div>
     <button class="sync-btn" id="sync-trigger-btn" onclick="triggerSync()">
       Pull Server Database to Local
+    </button>
+    <button class="push-btn" id="push-trigger-btn" onclick="triggerPush()">
+      Push Local Database to Server
     </button>
     <div class="sync-status" id="sync-msg"></div>
   {% endif %}
@@ -135,7 +153,51 @@ async function triggerSync() {
   } finally {
     btn.disabled = false;
     btn.textContent = 'Pull Server Database to Local';
-    // Refresh after 2 seconds
+    setTimeout(() => location.reload(), 2000);
+  }
+}
+
+async function triggerPush() {
+  const btn = document.getElementById('push-trigger-btn');
+  const msg = document.getElementById('sync-msg');
+  const statusText = document.getElementById('sync-status-text');
+
+  if (!confirm('⚠️ 此操作将覆盖服务器上的所有数据！\n\n确认要推送本地数据库到服务器吗？')) {
+    return;
+  }
+
+  btn.disabled = true;
+  document.getElementById('sync-trigger-btn').disabled = true;
+  btn.textContent = 'Pushing...';
+  msg.className = 'sync-status running';
+  msg.textContent = 'Push in progress, please wait...';
+  statusText.textContent = 'Running';
+
+  try {
+    const resp = await fetch('/api/system-env/trigger-push/', { method: 'POST' });
+    const data = await resp.json();
+
+    if (data.success) {
+      msg.className = 'sync-status success';
+      msg.textContent = 'Push completed successfully! Server restarted.';
+      statusText.textContent = 'Success';
+    } else if (data.status === 'failed') {
+      msg.className = 'sync-status failed';
+      msg.textContent = 'Push failed: ' + (data.error_message || 'Unknown error');
+      statusText.textContent = 'Failed';
+    } else {
+      msg.className = 'sync-status running';
+      msg.textContent = 'Push finished with status: ' + data.status;
+      statusText.textContent = data.status;
+    }
+  } catch (err) {
+    msg.className = 'sync-status failed';
+    msg.textContent = 'Request failed: ' + err.message;
+    statusText.textContent = 'Error';
+  } finally {
+    btn.disabled = false;
+    document.getElementById('sync-trigger-btn').disabled = false;
+    btn.textContent = 'Push Local Database to Server';
     setTimeout(() => location.reload(), 2000);
   }
 }

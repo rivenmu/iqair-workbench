@@ -67,3 +67,55 @@ def trigger_sync(trigger='manual'):
 def get_latest_sync():
     """Return the most recent SyncRecord or None."""
     return SyncRecord.objects.first()
+
+
+def trigger_push(trigger='manual'):
+    """Execute push via docker exec on the db-sync container.
+
+    Runs the push-db.sh script to push local DB to the server.
+    """
+    push_record = SyncRecord.objects.create(
+        trigger=f'push_{trigger}',
+        status='running',
+        started_at=datetime.now(timezone.utc),
+    )
+
+    try:
+        result = subprocess.run(
+            ['docker', 'exec', 'iqair-db-sync', '/sync/push-db.sh'],
+            capture_output=True,
+            text=True,
+            timeout=600,
+        )
+
+        finished_at = datetime.now(timezone.utc)
+        duration = (finished_at - push_record.started_at).total_seconds()
+
+        if result.returncode == 0:
+            push_record.status = 'success'
+            push_record.error_message = ''
+        else:
+            push_record.status = 'failed'
+            push_record.error_message = result.stderr or result.stdout or 'Unknown error'
+
+        push_record.finished_at = finished_at
+        push_record.duration_seconds = duration
+        push_record.save(update_fields=['status', 'finished_at', 'duration_seconds', 'error_message'])
+
+        logger.info('Push %s completed: %s (%.1fs)', push_record.id, push_record.status, duration)
+
+    except subprocess.TimeoutExpired:
+        push_record.status = 'failed'
+        push_record.finished_at = datetime.now(timezone.utc)
+        push_record.duration_seconds = (push_record.finished_at - push_record.started_at).total_seconds()
+        push_record.error_message = 'Push timed out after 10 minutes'
+        push_record.save(update_fields=['status', 'finished_at', 'duration_seconds', 'error_message'])
+
+    except Exception as e:
+        push_record.status = 'failed'
+        push_record.finished_at = datetime.now(timezone.utc)
+        push_record.duration_seconds = (push_record.finished_at - push_record.started_at).total_seconds()
+        push_record.error_message = str(e)
+        push_record.save(update_fields=['status', 'finished_at', 'duration_seconds', 'error_message'])
+
+    return push_record

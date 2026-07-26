@@ -74,6 +74,7 @@ services:
       SERVER_COMPOSE_FILE: /opt/iqair-workbench/docker-compose.yml
     volumes:
       - ./scripts/sync-db.sh:/sync/sync-db.sh:ro
+      - ./scripts/push-db.sh:/sync/push-db.sh:ro
       - ./data/media:/sync/data/media
       - ./data/snapshots:/sync/data/snapshots
       # SSH 密钥（免密登录服务器）

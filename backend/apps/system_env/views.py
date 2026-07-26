@@ -5,7 +5,7 @@ from django.utils.decorators import method_decorator
 from django.views import View
 
 from utils.env_detect import detect_deploy_env, get_env_info
-from .services import trigger_sync, get_latest_sync
+from .services import trigger_sync, trigger_push, get_latest_sync
 
 
 @csrf_exempt
@@ -16,6 +16,25 @@ def trigger_sync_view(request):
         return JsonResponse({'success': False, 'error': 'Sync is only available in local environment'}, status=403)
 
     record = trigger_sync(trigger='manual')
+
+    return JsonResponse({
+        'success': record.status == 'success',
+        'status': record.status,
+        'started_at': record.started_at.isoformat() if record.started_at else None,
+        'finished_at': record.finished_at.isoformat() if record.finished_at else None,
+        'duration_seconds': record.duration_seconds,
+        'error_message': record.error_message,
+    })
+
+
+@csrf_exempt
+@require_POST
+def trigger_push_view(request):
+    """AJAX endpoint to trigger a push to server. Only available in local env."""
+    if detect_deploy_env() != 'local':
+        return JsonResponse({'success': False, 'error': 'Push is only available in local environment'}, status=403)
+
+    record = trigger_push(trigger='manual')
 
     return JsonResponse({
         'success': record.status == 'success',
